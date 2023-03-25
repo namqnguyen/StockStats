@@ -44,10 +44,10 @@ function sleep(ms) {
 const getAndSave = async () => {
   if (DO) {
     for (const ticker of TICKERS) {
-      data = getTickerData(ticker);
-      response = saveTickerData(ticker, JSON.stringify(data));
-      console.log("ticker: " + ticker, "response: " + response);
-      sleep(1000);
+      const ticker_data = await getTickerData(ticker)
+      const db_response = await saveTickerData(ticker, JSON.stringify(ticker_data))
+      console.log("ticker: " + ticker + " response: " + JSON.stringify(db_response))
+      sleep(1000)
     }
   }
 }

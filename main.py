@@ -8,9 +8,10 @@ from bson.json_util import dumps, loads
 
 import uvicorn
 from fastapi import FastAPI, Request, Body
-# from fastapi.staticfiles import StaticFiles
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 from db import DATABASE, mongo_db
 
@@ -21,7 +22,8 @@ ld = logging.debug
 
 app = FastAPI()
 
-# app.mount("/rootpath", StaticFiles(directory="static"), name="static")
+app.mount("/rootpath", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="static")
 
 
 origins = [
@@ -58,6 +60,7 @@ async def insert_ticker_data(request: Request, ticker: str, data = Body()) -> Ob
 
 
 
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
 	ticker_docs = {}
@@ -67,7 +70,9 @@ async def read_root(request: Request):
 		# mongo_db[x].insert_one(obj)
 		ticker_docs[coll] = dumps( await mongo_db[coll].find({'_id': {'$gte': objectIdWithTimestamp(DATE)}}).to_list(length=1000) )
 
-	return str(ticker_docs)
+	ld(ticker_docs)
+	return templates.TemplateResponse("tickers.html", {"request": request, "data": ticker_docs})
+	# return str(ticker_docs)
 
 
 if __name__ == "__main__":
