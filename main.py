@@ -65,12 +65,20 @@ async def insert_ticker_data(request: Request, ticker: str, data = Body()) -> Ob
 async def read_root(request: Request):
 	ticker_docs = {}
 	for coll in await mongo_db.list_collection_names():
-		# str = '{"content":{"identifier":"id","label":"quoteData","urls":{"Equity":"/grid/p/site#r=jPage/https://research.ameritrade.com/grid/wwws/research/stocks/summary?c_name=invest_VENDOR","Fund":"/grid/p/site#r=jPage/https://research.ameritrade.com/grid/wwws/research/stocks/summary?c_name=invest_VENDOR","Option":"/grid/p/site#r=jPage/https://research.ameritrade.com/grid/wwws/research/stocks/summary?c_name=invest_VENDOR","Index":"/grid/p/site#r=jPage/https://research.ameritrade.com/grid/wwws/research/stocks/summary?c_name=invest_VENDOR","displayNewTab":"no","advanceChartLink":"https://research.ameritrade.com/grid/wwws/research/stocks/charts?display=popup&c_name=invest_VENDOR"},"isMarketOpen":"yes","isMarketExtendedSessionOpen":"no","items":[{"id":"1.00","isValidFlag":"yes","isRealtimeFlag":"yes","symbol":"WAL","symbolDisplay":"WAL","cusip":"957638109","description":"WesternAllianceBancorporationCommonStock(DE)","securityTypeDescription":"Equity","securityTypeValue":"E","sector":"Financials","industry":"Banks","ask":"31.01","askId":"K","askSize":"100.00","bid":"30.94","bidId":"Z","bidSize":"300.00","last":"30.975","lastId":"D","lastSize":"200.00","open":"30.21","close":"31.25","high":"32.63","low":"29.27","yearHigh":"88.00","yearLow":"7.46","change":"-0.275","changePercentage":"-0.88","volume":"3639369.00","exchangeId":"n","exchangeName":"NYSE","realtimeEntitled":false,"exchangeDescription":"NYSE","fundStrategy":"","daysUntilExpiration":"0.00","openInterest":"0.00","impliedVolatility":"0.00","timeValueIndex":"0.00","delta":"0.00","gamma":"0.00","theta":"0.00","vega":"0.00","rho":"0.00","probabilityOfExpiringInTheMoney":"0.00","deliverableNotes":"","sharesPerContract":"0.00","isNonStandardOption":"no","isMiniOption":"no","netAssetValue":"0.00","offerPrice":"0.00","underlyingSymbol":"","streamingSymbol":"WAL","time":"11:06:36amET","date":"03/24/2023","DelayedDatadisplay":"none","NTFFlag":false,"noLoadFlag":false,"premierFlag":false,"family":"","categoryName":"","offerPrice":"0.00","ytdReturn":"0.00","marginPercentage":"100%","lowConcentrationPercentage":"100%","midConcentrationPercentage":"100%","highConcentrationPercentage":"100%"}]},"time":"11:06:36amET","timestamp":"11:06:36amET3/24/23","errors":{}}'
-		# obj = json.loads(str)
-		# mongo_db[x].insert_one(obj)
-		ticker_docs[coll] = dumps( await mongo_db[coll].find({'_id': {'$gte': objectIdWithTimestamp(DATE)}}).to_list(length=1000) )
+		docs = await mongo_db[coll].find({'_id': {'$gte': objectIdWithTimestamp(DATE)}}).to_list(length=1000)
+		ticker_docs[coll] = dict()
+		ticker_docs[coll]['labels'] = list()
+		ticker_docs[coll]['bids'] = list()
+		ticker_docs[coll]['asks'] = list()
+		ticker_docs[coll]['lasts'] = list()
+		for doc in docs:
+			item = doc['content']['items'][0]
+			time = item['time'].split(' ')[0]
+			ticker_docs[coll]['labels'].append(str(time))
+			ticker_docs[coll]['bids'].append(float(item['bid']))
+			ticker_docs[coll]['asks'].append(float(item['ask']))
+			ticker_docs[coll]['lasts'].append(float(item['last']))
 
-	ld(ticker_docs)
 	return templates.TemplateResponse("tickers.html", {"request": request, "data": ticker_docs})
 	# return str(ticker_docs)
 

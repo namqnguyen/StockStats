@@ -1,5 +1,33 @@
 <html>
+	<head>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	</head>
+
 	{% for key, value in data.items() %}
-	<div>{{key}}: {{value}}</div>
+	<div>
+		<h2>{{key}}</h2>
+		<canvas id="{{key}}"></canvas>
+	</div>
+	<script>
+		const ctx = document.getElementById('{{key}}');
+		
+		new Chart(ctx, {
+			type: 'line',
+			data: {
+			labels: {{value['labels']|safe}},
+			datasets: [
+				{label: 'bid',
+				data: {{value['bids']}},
+				borderWidth: 1},
+				{label: 'ask',
+				data: {{value['asks']}},
+				borderWidth: 1},
+				{label: 'last',
+				data: {{value['lasts']}},
+				borderWidth: 1},
+			]
+			},
+  		});
+	</script>
 	{% endfor %}
 </html>
