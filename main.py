@@ -2,7 +2,7 @@
 
 import logging
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson.objectid import ObjectId
 from bson.json_util import dumps, loads
 
@@ -42,14 +42,14 @@ app.add_middleware(
 )
 
 
-DATE = '2023-03-22'
+MINUTES_DIFF = 60
+DATE_TIME = datetime.now() - timedelta(minutes=MINUTES_DIFF)
 
 
 def objectIdWithTimestamp(timestamp) -> ObjectId | None:
 	if timestamp:
-		dt = datetime.strptime(timestamp, '%Y-%m-%d')
-		constructedObjectId = ObjectId.from_datetime(dt)
-		return constructedObjectId
+		# dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+		return ObjectId.from_datetime(timestamp)
 
 
 
@@ -65,7 +65,7 @@ async def insert_ticker_data(request: Request, ticker: str, data = Body()) -> Ob
 async def read_root(request: Request):
 	ticker_docs = {}
 	for coll in await mongo_db.list_collection_names():
-		docs = await mongo_db[coll].find({'_id': {'$gte': objectIdWithTimestamp(DATE)}}).to_list(length=1000)
+		docs = await mongo_db[coll].find({'_id': {'$gte': objectIdWithTimestamp(DATE_TIME)}}).to_list(length=1000)
 		ticker_docs[coll] = dict()
 		ticker_docs[coll]['labels'] = list()
 		ticker_docs[coll]['bids'] = list()
