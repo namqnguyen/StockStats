@@ -1,20 +1,8 @@
 
-
-function getToken() {
-  props = document.getElementById('container-site').getAttribute('data-dojo-props').split(", ")
-  for (const e of props) {
-    const key_value = e.split(":")
-    if (key_value[0] == 'transactionToken') {
-      return key_value[1];
-    }
-  }
-}
-
-
 const getTickerData = async (ticker) => {
   const response = await fetch('https://invest.ameritrade.com/grid/m/equityOrderQuote/json', {
     method: 'POST',
-    body: 'symbols='+ticker+'&forceRealTime=true&isTradeQuote=true&transactionToken='+TOKEN+'&xhrToken=true', // string or object
+    body: 'symbols='+ ticker +'&forceRealTime=true&isTradeQuote=true&transactionToken='+ getProps().authToken.token +'&xhrToken=true', // string or object
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
@@ -42,19 +30,34 @@ function sleep(ms) {
 }
 
 const getAndSave = async () => {
-  if (DO) {
-    for (const ticker of TICKERS) {
-      const ticker_data = await getTickerData(ticker)
-      const db_response = await saveTickerData(ticker, JSON.stringify(ticker_data))
-      console.log("ticker: " + ticker + " response: " + JSON.stringify(db_response))
-      sleep(1000)
-    }
+  for (const ticker of TICKERS) {
+    const ticker_data = await getTickerData(ticker)
+    const db_response = await saveTickerData(ticker, JSON.stringify(ticker_data))
+    console.log("ticker: " + ticker + " response: " + JSON.stringify(db_response))
+    sleep(1000)
   }
 }
 
-var DO = true;
-var TOKEN = getToken();
-var TICKERS = ['WAL'];
-var intv = setInterval(getAndSave, 10000);
-// data='{"content":{"identifier":"id","label":"quoteData","urls":{"Equity":"/grid/p/site#r=jPage/https://research.ameritrade.com/grid/wwws/research/stocks/summary?c_name=invest_VENDOR","Fund":"/grid/p/site#r=jPage/https://research.ameritrade.com/grid/wwws/research/stocks/summary?c_name=invest_VENDOR","Option":"/grid/p/site#r=jPage/https://research.ameritrade.com/grid/wwws/research/stocks/summary?c_name=invest_VENDOR","Index":"/grid/p/site#r=jPage/https://research.ameritrade.com/grid/wwws/research/stocks/summary?c_name=invest_VENDOR","displayNewTab":"no","advanceChartLink":"https://research.ameritrade.com/grid/wwws/research/stocks/charts?display=popup&c_name=invest_VENDOR"},"isMarketOpen":"yes","isMarketExtendedSessionOpen":"no","items":[{"id":"1.00","isValidFlag":"yes","isRealtimeFlag":"yes","symbol":"WAL","symbolDisplay":"WAL","cusip":"957638109","description":"WesternAllianceBancorporationCommonStock(DE)","securityTypeDescription":"Equity","securityTypeValue":"E","sector":"Financials","industry":"Banks","ask":"31.01","askId":"K","askSize":"100.00","bid":"30.94","bidId":"Z","bidSize":"300.00","last":"30.975","lastId":"D","lastSize":"200.00","open":"30.21","close":"31.25","high":"32.63","low":"29.27","yearHigh":"88.00","yearLow":"7.46","change":"-0.275","changePercentage":"-0.88","volume":"3639369.00","exchangeId":"n","exchangeName":"NYSE","realtimeEntitled":false,"exchangeDescription":"NYSE","fundStrategy":"","daysUntilExpiration":"0.00","openInterest":"0.00","impliedVolatility":"0.00","timeValueIndex":"0.00","delta":"0.00","gamma":"0.00","theta":"0.00","vega":"0.00","rho":"0.00","probabilityOfExpiringInTheMoney":"0.00","deliverableNotes":"","sharesPerContract":"0.00","isNonStandardOption":"no","isMiniOption":"no","netAssetValue":"0.00","offerPrice":"0.00","underlyingSymbol":"","streamingSymbol":"WAL","time":"11:06:36amET","date":"03/24/2023","DelayedDatadisplay":"none","NTFFlag":false,"noLoadFlag":false,"premierFlag":false,"family":"","categoryName":"","offerPrice":"0.00","ytdReturn":"0.00","marginPercentage":"100%","lowConcentrationPercentage":"100%","midConcentrationPercentage":"100%","highConcentrationPercentage":"100%"}]},"time":"11:06:36amET","timestamp":"11:06:36amET3/24/23","errors":{}}';
-// await saveTickerData('WAL', data)
+
+function keepAlive() {
+  document.getElementById('dtExpand').click()
+}
+
+
+function getProps() {
+  const tmp = '{' + document.getElementById('container-site').getAttribute('data-dojo-props').replace(/(\w+):/g, '"$1":').replace(/'/g, '"') + '}';
+  return JSON.parse(tmp)
+}
+
+
+function r(seconds) {
+  if (typeof INTV === 'undefined'|| INTV === null) {
+    clearInterval(INTV);
+  }
+  INTV = setInterval(getAndSave, seconds*1000);
+}
+
+const TICKERS = ['WAL'];
+const KEEP_ALIVE_INTERVAL = 300*1000
+let INTV = setInterval(getAndSave, 5*1000);
+let KA = setInterval(keepAlive, KEEP_ALIVE_INTERVAL);

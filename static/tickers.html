@@ -1,6 +1,6 @@
 <html>
 	<head>
-		<meta http-equiv="refresh" content="2" />
+		<meta http-equiv="refresh" content="1" />
 		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 		<style>
 			/* .chart-wrapper {
@@ -16,34 +16,113 @@
 
 	{% for key, value in data.items() %}
 	<div class="chart-wrapper">
-		<h2>{{key}}</h2>
+		<h2>{{key}} |
+			<a href="/WAL">Today</a> |
+			<a href="/WAL?bm=60">60 minutes</a> |
+			<a href="/WAL?bm=30">30 minutes</a> |
+			<a href="/WAL?bm=15">15 minutes</a> |
+			<a href="/WAL?bm=10">10 minutes</a> |
+			<a href="/WAL?bm=5">5 minutes</a> |
+			<a href="/WAL?bm=1">1 minute</a>
+		</h2>
 		<canvas id="{{key}}"></canvas>
 	</div>
 	<script>
 		const ctx = document.getElementById('{{key}}');
-		
+
+// Chart.plugins.register({
+//    beforeInit: function(chart) {
+//       chart.options.scales.yAxes[0].ticks.suggestedMin = Math.min.apply(this, chart.data.datasets[0].data);
+//       chart.options.scales.yAxes[1].ticks.suggestedMax = Math.max.apply(this, chart.data.datasets[0].data);
+//    }
+// });
+
 		new Chart(ctx, {
 			type: 'line',
 			data: {
-			labels: {{value['labels']|safe}},
-			datasets: [
-				{label: 'bid',
-				data: {{value['bids']}},
-				borderWidth: 1},
-				{label: 'ask',
-				data: {{value['asks']}},
-				borderWidth: 1},
-				{label: 'last',
-				data: {{value['lasts']}},
-				borderWidth: 1},
-			]
+				labels: {{value['labels']|safe}},
+				datasets: [
+					{
+						label: 'bid',
+						data: {{value['bids']}},
+						borderWidth: 1,
+						yAxisID: 'y1',
+						borderColor: "green",
+						// borderDash: [5, 5],
+						// backgroundColor: "#e755ba",
+						// pointBackgroundColor: "#55bae7",
+						// pointBorderColor: "#55bae7",
+						// pointHoverBackgroundColor: "#55bae7",
+						// pointHoverBorderColor: "#55bae7",
+					},
+					{
+						label: 'ask',
+						data: {{value['asks']}},
+						borderWidth: 1,
+						yAxisID: 'y1',
+						borderColor: "red",
+					},
+					{
+						label: 'last',
+						data: {{value['lasts']}},
+						borderWidth: 1,
+						yAxisID: 'y1',
+						borderColor: "#FFC300",
+					},
+				]
 			},
 			options: {
-				//responsive: true,
+				responsive: true,
+				stacked: true,
 				//maintainAspectRatio: false,
     			animation: {
         			duration: 0
     			},
+				plugins: {
+					title: {
+						display: true,
+						text: '{{key}}'
+					}
+				},
+				scales: {
+					y: {
+						type: 'linear',
+						position: 'left',
+						// min: 33,
+						// max: 35,
+						display: false,
+						grid: {
+							drawOnChartArea: false
+						}
+					},
+					y1: {
+						type: 'linear',
+						position: 'right',
+						// min: 33,
+						// max: 35,
+						// grid: {
+						// 	display: false
+						// }
+					},
+					// yAxes: [{
+					// 		id: 'y',
+					// 		type: 'linear',
+					// 		position: 'left',
+					// 		display: false,
+					// 	}, {
+					// 		id: 'y1',
+					// 		type: 'linear',
+					// 		position: 'right',
+					// 		grid: {
+					// 			display: false
+					// 		}
+					// }],
+				},
+				plugins: {
+					customCanvasBackgroundColor: {
+						color: 'gray',
+					}
+				},
 			},
   		});
 	</script>

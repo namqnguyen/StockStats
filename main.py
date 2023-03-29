@@ -7,7 +7,7 @@ from bson.objectid import ObjectId
 from bson.json_util import dumps, loads
 
 import uvicorn
-from fastapi import FastAPI, Request, Body,
+from fastapi import FastAPI, Request, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -58,13 +58,13 @@ def objectIdWithTimestamp(timestamp) -> ObjectId | None:
 		return ObjectId.from_datetime(timestamp)
 
 
-async def get_ticker_data(tickers: list, times: list = list(), backhr: int = None) -> list:
+async def get_ticker_data(tickers: list, times: list = list(), bm: int = None) -> list:
 	if len(times) == 0:
-		begin = datetime.combine(datetime.today(), Time.min)
+		begin = datetime.combine(datetime.utcnow(), Time.min)
 		times = [begin, begin + timedelta(1)]
-	if backhr is not None:
-		times[0] = datetime.now() - timedelta(hours=backhr+1)
-	conditions = {'$and': [{'datetime': {'$gte': times[0]}}, {'datetime': {'$lt': times[1]}}]}
+	if bm is not None:
+		times[0] = datetime.utcnow() - timedelta(minutes=bm)
+	conditions = {'datetime': {'$gte': times[0], '$lt': times[1]}}
 	ticker_docs = {}
 	for ticker in tickers:
 		# docs = await mongo_db[ticker].find({'_id': {'$gte': ObjectId('642151aaa5f6119f4fd7a9f6')}}).to_list(length=1000)
@@ -93,13 +93,13 @@ async def read_root(request: Request):
 
 
 @app.get("/{ticker}", response_class=HTMLResponse)
-async def ticker_data(request: Request, ticker: str, date: str = None, backhr: int = None):
+async def ticker_data(request: Request, ticker: str, date: str = None, bm: int = None):
 	times = []
 	if date is not None:
 		begin = datetime.combine(datetime.strptime(date, '%Y%m%d'), Time.min)
 		end = begin + timedelta(1)
 		times = [begin, end]
-	ticker_docs = await get_ticker_data([ticker], times, backhr)
+	ticker_docs = await get_ticker_data([ticker], times, bm)
 	return templates.TemplateResponse("tickers.html", {"request": request, "data": ticker_docs})
 	# return str(ticker_docs)
 
