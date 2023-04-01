@@ -1,11 +1,26 @@
 
-const getTickerData = async (ticker) => {
-  const response = await fetch('https://invest.ameritrade.com/grid/m/equityOrderQuote/json', {
-    method: 'POST',
-    body: 'symbols='+ ticker +'&forceRealTime=true&isTradeQuote=true&transactionToken='+ getProps().authToken.token +'&xhrToken=true', // string or object
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    }
+let getTickerData = async (ticker) => {
+  const response = await fetch("https://invest.ameritrade.com/grid/m/equityOrderQuote/json", {
+    "headers": {
+      "accept": "*/*",
+      "accept-language": "en-US,en;q=0.9",
+      "adrum": "isAjax:true",
+      "content-type": "application/x-www-form-urlencoded",
+      "correlation-id": dojoConfig.correlationId,
+      "sec-ch-ua": "\"Google Chrome\";v=\"111\", \"Not(A:Brand\";v=\"8\", \"Chromium\";v=\"111\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-origin",
+      "x-requested-with": "XMLHttpRequest"
+    },
+    "referrer": "https://invest.ameritrade.com/grid/p/site",
+    "referrerPolicy": "origin-when-cross-origin",
+    "body": "symbols="+ticker+"&forceRealTime=true&isTradeQuote=true&transactionToken="+dojoConfig.transactionToken+"&xhrToken=true&dojo.preventCache="+Date.now(),
+    "method": "POST",
+    "mode": "cors",
+    "credentials": "include"
   });
 
   return await response.json();
@@ -40,24 +55,30 @@ const getAndSave = async () => {
 
 
 function keepAlive() {
-  document.getElementById('dtExpand').click()
+  document.getElementById('dtExpand').click();
+  document.getElementById('navAccOverview').click();
+  sleep(5000);
+  document.getElementById('portfolioPositions').click();
 }
 
 
 function getProps() {
-  const tmp = '{' + document.getElementById('container-site').getAttribute('data-dojo-props').replace(/(\w+):/g, '"$1":').replace(/'/g, '"') + '}';
-  return JSON.parse(tmp)
+  // const tmp = '{' + document.getElementById('container-site').getAttribute('data-dojo-props').replace(/(\w+):/g, '"$1":').replace(/'/g, '"') + '}';
+  // return JSON.parse(tmp)
+  return dojoConfig;
 }
 
 
-function r(seconds) {
-  if (typeof INTV === 'undefined'|| INTV === null) {
-    clearInterval(INTV);
+function run() {
+  setTimeout(run, S*1000);
+  if (P !== 1) {
+    getAndSave();
   }
-  INTV = setInterval(getAndSave, seconds*1000);
 }
 
 const TICKERS = ['WAL'];
-const KEEP_ALIVE_INTERVAL = 300*1000
-let INTV = setInterval(getAndSave, 5*1000);
+const KEEP_ALIVE_INTERVAL = 180*1000
 let KA = setInterval(keepAlive, KEEP_ALIVE_INTERVAL);
+let S = 5;
+let P = 0;
+setTimeout(run, 100);

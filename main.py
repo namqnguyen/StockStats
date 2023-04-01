@@ -1,10 +1,11 @@
 """Main app"""
 
+import math
 import logging
-import json
 from datetime import datetime, time as Time, timedelta
 from bson.objectid import ObjectId
 from bson.json_util import dumps, loads
+import pytz
 
 import uvicorn
 from fastapi import FastAPI, Request, Body
@@ -58,50 +59,75 @@ def objectIdWithTimestamp(timestamp) -> ObjectId | None:
 		return ObjectId.from_datetime(timestamp)
 
 
-async def get_ticker_data(tickers: list, times: list = list(), bm: int = None) -> list:
-	if len(times) == 0:
-		begin = datetime.combine(datetime.utcnow(), Time.min)
-		times = [begin, begin + timedelta(1)]
-	if bm is not None:
-		times[0] = datetime.utcnow() - timedelta(minutes=bm)
-	conditions = {'datetime': {'$gte': times[0], '$lt': times[1]}}
-	ticker_docs = {}
+async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list:
+	if begin is None or end is None:
+		return []
+	conditions = {'datetime': {'$gte': begin, '$lte': end}}
+	data = {}
 	for ticker in tickers:
-		# docs = await mongo_db[ticker].find({'_id': {'$gte': ObjectId('642151aaa5f6119f4fd7a9f6')}}).to_list(length=1000)
-		docs = await mongo_db[ticker].find(conditions).to_list(length=1000)
-		ticker_docs[ticker] = {}
-		ticker_docs[ticker]['labels'] = []
-		ticker_docs[ticker]['bids'] = []
-		ticker_docs[ticker]['asks'] = []
-		ticker_docs[ticker]['lasts'] = []
+		docs = await mongo_db[ticker].find(conditions).to_list(length=5000)
+		data[ticker] = {}
+		data[ticker]['labels'] = []
+		data[ticker]['bids'] = []
+		data[ticker]['asks'] = []
+		data[ticker]['lasts'] = []
 		for doc in docs:
 			item = doc['content']['items'][0]
+			if item['bid'] == '':
+				continue
 			time = item['time'].split(' ')[0]
-			ticker_docs[ticker]['labels'].append(str(time))
-			ticker_docs[ticker]['bids'].append(float(item['bid']))
-			ticker_docs[ticker]['asks'].append(float(item['ask']))
-			ticker_docs[ticker]['lasts'].append(float(item['last']))
-	return ticker_docs
+			data[ticker]['labels'].append(str(time))
+			data[ticker]['bids'].append(float(item['bid']))
+			data[ticker]['asks'].append(float(item['ask']))
+			data[ticker]['lasts'].append(float(item['last']))
+	return data
+
 
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-	tickers = await mongo_db.list_collection_names()
-	ticker_docs = await get_ticker_data(tickers)
-	return templates.TemplateResponse("tickers.html", {"request": request, "data": ticker_docs})
-	# return str(ticker_docs)
+	#tickers = await mongo_db.list_collection_names()
+	#data = await get_ticker_data(tickers)
+	#return templates.TemplateResponse("tickers.html", {"request": request, "data": data})
+	return ''
+
+
+@app.get('/favicon.ico')
+async def favicon():
+    return ''
 
 
 @app.get("/{ticker}", response_class=HTMLResponse)
-async def ticker_data(request: Request, ticker: str, date: str = None, bm: int = None):
-	times = []
-	if date is not None:
-		begin = datetime.combine(datetime.strptime(date, '%Y%m%d'), Time.min)
-		end = begin + timedelta(1)
-		times = [begin, end]
-	ticker_docs = await get_ticker_data([ticker], times, bm)
-	return templates.TemplateResponse("tickers.html", {"request": request, "data": ticker_docs})
-	# return str(ticker_docs)
+async def ticker_data(request: Request, ticker: str = None, bm: int|str = None, from_time: int|str = None, to_time: int|str = None):
+	utcdt = datetime.now(tz=pytz.utc).replace(tzinfo=None) #- timedelta(1)
+	nydt = datetime.now(tz=pytz.timezone('America/New_York')).replace(tzinfo=None) #- timedelta(1)
+	diff = (utcdt - nydt).seconds
+	offset_hrs = math.ceil(diff / 3600)
+	begin = datetime.combine(utcdt, Time.min)
+	end = begin + timedelta(1)
+
+	if type(to_time) is int:
+		end =  begin + timedelta(hours = to_time + offset_hrs)
+	elif type(to_time) is str:
+		hr = int(to_time.split(':')[0])
+		min = int(to_time.split(':')[1])
+		end =  begin + timedelta(hours = hr + offset_hrs, minutes=min)
+	if type(from_time) is int:
+		begin = begin + timedelta(hours = from_time + offset_hrs)
+	elif type(from_time) is str:
+		hr = int(from_time.split(':')[0])
+		min = int(from_time.split(':')[1])
+		begin = begin + timedelta(hours = hr + offset_hrs, minutes=min)
+
+	if bm is not None and bm >= 0:
+		if bm == 0:
+			end = begin + timedelta(hours = 9 + 7 + offset_hrs)
+			begin = begin + timedelta(hours = 9 + offset_hrs, minutes=30)
+		else:
+			begin = utcdt - timedelta(minutes=bm)
+
+	data = await get_ticker_data([ticker], begin, end)
+	return templates.TemplateResponse("tickers.html", {"request": request, "data": data, "ticker": ticker})
 
 
 @app.post("/{ticker}", response_class=JSONResponse)
