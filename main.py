@@ -51,12 +51,6 @@ TIMES = {
 }
 
 
-def objectIdWithTimestamp(timestamp) -> ObjectId | None:
-	if timestamp:
-		# dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
-		return ObjectId.from_datetime(timestamp)
-
-
 async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list:
 	if begin is None or end is None:
 		return []
@@ -73,11 +67,14 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list
 			item = doc['content']['items'][0]
 			if item['bid'] == '':
 				continue
-			time = (doc['datetime'].astimezone(pytz.timezone('America/New_York'))).strftime('%H:%M:%S') # item['time'].split(' ')[0]
-			data[ticker]['labels'].append(str(time))
+			et = item['time'].split(' ')[2]
+			time = doc['datetime'] + timedelta(hours=int(int(TIMES[et])/100))
+			# datetime.strptime(f'{t[0]} {t[1]} {TIMES[t[2]]}', '%I:%M:%S %p %z') # item['time'].split(' ')[0]
+			data[ticker]['labels'].append(time.strftime('%H:%M:%S'))
 			data[ticker]['bids'].append(float(item['bid']))
 			data[ticker]['asks'].append(float(item['ask']))
 			data[ticker]['lasts'].append(float(item['last']))
+
 	return data
 
 
@@ -90,37 +87,46 @@ async def read_root(request: Request):
 	return ''
 
 
-@app.get("/{ticker}")
-async def ticker_data(request: Request, ticker: str = None, bm: int|str = None, from_time: int|str = None, to_time: int|str = None):
+def get_current_datetime() -> dict:
 	utcdt = datetime.now(tz=pytz.utc).replace(tzinfo=None) - timedelta(2)
 	nydt = datetime.now(tz=pytz.timezone('America/New_York')).replace(tzinfo=None) - timedelta(2)
 	diff = (utcdt - nydt).seconds
 	offset_hrs = math.ceil(diff / 3600)
 	begin = datetime.combine(utcdt, Time.min)
 	end = begin + timedelta(1)
+	return {"begin": begin, "end": end, "offset_hrs": offset_hrs, "utcdt": utcdt, "nydt": nydt}
 
+
+@app.get("/{ticker}")
+async def ticker_data(request: Request, ticker: str = None, bm: int|str = None, from_time: int|str = None, to_time: int|str = None):
+	dt = get_current_datetime()
 	if type(to_time) is int and to_time > 0:
-		end =  begin + timedelta(hours = to_time + offset_hrs)
+		dt['end'] =  dt['begin'] + timedelta(hours = to_time + dt['offset_hrs'])
 	elif type(to_time) is str and to_time != '':
 		hr = int(to_time.split(':')[0])
 		min = int(to_time.split(':')[1])
 		sec = int(to_time.split(':')[2]) if len(from_time.split(':')) > 2 else 0
-		end =  begin + timedelta(hours = hr + offset_hrs, minutes=min, seconds=sec)
+		dt['end'] =  dt['begin'] + timedelta(hours = hr + dt['offset_hrs'], minutes=min, seconds=sec)
+
 	if type(from_time) is int and from_time > 0:
-		begin = begin + timedelta(hours = from_time + offset_hrs)
+		dt['begin'] = dt['begin'] + timedelta(hours = from_time + dt['offset_hrs'])
 	elif type(from_time) is str and from_time != '':
 		hr = int(from_time.split(':')[0])
 		min = int(from_time.split(':')[1])
 		sec = int(from_time.split(':')[2]) if len(from_time.split(':')) > 2 else 0
-		begin = begin + timedelta(hours = hr + offset_hrs, minutes=min, seconds=sec)
+		dt['begin'] = dt['begin'] + timedelta(hours = hr + dt['offset_hrs'], minutes=min, seconds=sec)
 
 	if bm is not None and bm >= 0:
 		if bm == 0:
-			end = begin + timedelta(hours = 9 + 7 + offset_hrs)
-			begin = begin + timedelta(hours = 9 + offset_hrs, minutes=30)
+			dt['end'] = dt['begin'] + timedelta(hours = 9 + 7 + dt['offset_hrs'])
+			dt['begin'] = dt['begin'] + timedelta(hours = 9 + dt['offset_hrs'], minutes=30)
 		else:
-			begin = utcdt - timedelta(minutes=bm)
-	data = await get_ticker_data([ticker], begin, end)
+			dt['begin'] = dt['utcdt'] - timedelta(minutes=bm)
+
+	dt['end'] = dt['end'] - timedelta(hours=4)
+	ld(dt['begin'])
+	ld(dt['end'])
+	data = await get_ticker_data([ticker], dt['begin'], dt['end'])
 	if request.headers.get('Content-Type') == 'application/json':
 		return ORJSONResponse(data, status_code=200)
 	else:

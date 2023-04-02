@@ -127,11 +127,6 @@
 		const ctx = document.getElementById('{{ticker}}');
 		let stockChart = new Chart(ctx, config);
 
-		lastTime = labels[labels.length - 1].split(':');
-		lastTime[2] = parseInt(lastTime[2])+1;
-
-		url = ticker + '?from_time=' + lastTime.join(':');
-
 		const getNewTickerData = async (url) => {
 			const response = await fetch(url, {
 			"headers": {
@@ -142,5 +137,26 @@
 			});
 			return await response.json();
 		}
+
+		const updateChart = async () => {
+			lastTime = labels[labels.length - 1].split(':');
+			lastTime[0] = parseInt(lastTime[0]) - 4;  // ET
+			lastTime[2] = parseInt(lastTime[2]) + 1;  // want 1 second more
+			url = ticker + '?from_time=' + lastTime.join(':');
+			newData = await getNewTickerData(url);
+
+			// labels = labels.concat(newData[ticker].labels)
+			// bids = bids.concat(newData[ticker].bids);
+			// asks = asks.concat(newData[ticker].asks);
+			// lasts = lasts.concat(newData[ticker].lasts);
+			data.labels = data.labels.concat(newData[ticker].labels)
+			data.datasets[0].data = data.datasets[0].data.concat(newData[ticker].bids);
+			data.datasets[1].data = data.datasets[1].data.concat(newData[ticker].asks);
+			data.datasets[2].data = data.datasets[2].data.concat(newData[ticker].lasts);
+			config.data = data;
+			stockChart.destroy();
+			stockChart = new Chart(ctx, config);
+		}
+
 	</script>
 </html>
