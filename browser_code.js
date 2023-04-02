@@ -1,5 +1,5 @@
 
-let getTickerData = async (ticker) => {
+let getTickerDataFromTDA = async (ticker) => {
   const response = await fetch("https://invest.ameritrade.com/grid/m/equityOrderQuote/json", {
     "headers": {
       "accept": "*/*",
@@ -46,9 +46,9 @@ function sleep(ms) {
 
 const getAndSave = async () => {
   for (const ticker of TICKERS) {
-    const ticker_data = await getTickerData(ticker)
-    const db_response = await saveTickerData(ticker, JSON.stringify(ticker_data))
-    console.log("ticker: " + ticker + " response: " + JSON.stringify(db_response))
+    const ticker_data = await getTickerDataFromTDA(ticker);
+    const db_response = await saveTickerData(ticker, JSON.stringify(ticker_data));
+    console.log("ticker: " + ticker + " response: " + JSON.stringify(db_response));
     sleep(1000)
   }
 }
