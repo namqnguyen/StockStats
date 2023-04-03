@@ -12,40 +12,44 @@
 			}
 		</script>
 		<script>
-			let ticker = '{{ticker}}';
-			let labels = {{data[ticker]['labels']|safe}};
-			let bids = {{data[ticker]['bids']}};
-			let asks = {{data[ticker]['asks']}};
-			let lasts = {{data[ticker]['lasts']}};
+			const ticker = '{{ticker}}';
+			let dataObj = {
+				times: {{data[ticker]['times']|safe}},
+				bids: {{data[ticker]['bids']}},
+				asks: {{data[ticker]['asks']}},
+				lasts: {{data[ticker]['lasts']}},
+			}
 
-			let data = {
-				labels: labels,
-				datasets: [
-					{
-						label: 'bid',
-						data: bids,
-						borderWidth: 1,
-						yAxisID: 'y1',
-						borderColor: "green",
-					},
-					{
-						label: 'ask',
-						data: asks,
-						borderWidth: 1,
-						yAxisID: 'y1',
-						borderColor: "red",
-					},
-					{
-						label: 'last',
-						data: lasts,
-						borderWidth: 1,
-						yAxisID: 'y1',
-						borderColor: "#FFC300",
-					},
-				],
-			};
+			function getChartData() {
+				return {
+					labels: dataObj.times,
+					datasets: [
+						{
+							label: 'bid',
+							data: dataObj.bids,
+							borderWidth: 1,
+							yAxisID: 'y1',
+							borderColor: "green",
+						},
+						{
+							label: 'ask',
+							data: dataObj.asks,
+							borderWidth: 1,
+							yAxisID: 'y1',
+							borderColor: "red",
+						},
+						{
+							label: 'last',
+							data: dataObj.lasts,
+							borderWidth: 1,
+							yAxisID: 'y1',
+							borderColor: "#FFC300",
+						},
+					],
+				};
+			}
 
-			let options = {
+			let chartOptions = {
 				responsive: true,
 				stacked: true,
 				//maintainAspectRatio: false,
@@ -55,7 +59,7 @@
 				plugins: {
 					title: {
 						display: true,
-						text: '{{ticker}}'
+						text: ticker
 					}
 				},
 				scales: {
@@ -96,11 +100,13 @@
 				},
 			};
 
-			let config = {
-				type: 'line',
-				data: data,
-				options: options,
-			};
+			function getChartConfig() {
+				return {
+					type: 'line',
+					data: getChartData(),
+					options: chartOptions,
+				};
+			}
 		</script>
 	</head>
 
@@ -125,7 +131,7 @@
 
 	<script>
 		const ctx = document.getElementById('{{ticker}}');
-		let stockChart = new Chart(ctx, config);
+		let stockChart = new Chart(ctx, getChartConfig());
 
 		const getNewTickerData = async (url) => {
 			const response = await fetch(url, {
@@ -138,25 +144,34 @@
 			return await response.json();
 		}
 
-		const updateChart = async () => {
-			lastTime = labels[labels.length - 1].split(':');
-			lastTime[0] = parseInt(lastTime[0]) - 4;  // ET
-			lastTime[2] = parseInt(lastTime[2]) + 1;  // want 1 second more
-			url = ticker + '?from_time=' + lastTime.join(':');
+		const updateChartWithNewData = async () => {
+			begin = dataObj.times[dataObj.times.length - 1].split(':');
+			begin[0] = parseInt(begin[0]);  // ET
+			begin[2] = parseInt(begin[2]) + 1;  // want 1 second more
+
+			//end = begin.concat([]);
+			//end[0] += 1;
+			
+			url = ticker + '?from_time=' + begin.join(':');
 			newData = await getNewTickerData(url);
 
-			// labels = labels.concat(newData[ticker].labels)
-			// bids = bids.concat(newData[ticker].bids);
-			// asks = asks.concat(newData[ticker].asks);
-			// lasts = lasts.concat(newData[ticker].lasts);
-			data.labels = data.labels.concat(newData[ticker].labels)
-			data.datasets[0].data = data.datasets[0].data.concat(newData[ticker].bids);
-			data.datasets[1].data = data.datasets[1].data.concat(newData[ticker].asks);
-			data.datasets[2].data = data.datasets[2].data.concat(newData[ticker].lasts);
-			config.data = data;
-			stockChart.destroy();
-			stockChart = new Chart(ctx, config);
+			if (newData[ticker].times.length > 0) {
+				dataObj.times = dataObj.times.concat(newData[ticker].times)
+				dataObj.bids = dataObj.bids.concat(newData[ticker].bids);
+				dataObj.asks = dataObj.asks.concat(newData[ticker].asks);
+				dataObj.lasts = dataObj.lasts.concat(newData[ticker].lasts);
+
+				stockChart.destroy();
+				stockChart = new Chart(ctx, getChartConfig());
+			}
 		}
 
+		let I = 1;
+		function runUpdateInterval() {
+			setTimeout(runUpdateInterval, I*1000);
+			updateChartWithNewData();
+		}
+
+		runUpdateInterval();
 	</script>
 </html>

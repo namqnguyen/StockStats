@@ -49,7 +49,7 @@ const getAndSave = async () => {
     const ticker_data = await getTickerDataFromTDA(ticker);
     const db_response = await saveTickerData(ticker, JSON.stringify(ticker_data));
     console.log("ticker: " + ticker + " response: " + JSON.stringify(db_response));
-    sleep(1000)
+    //sleep(1000)
   }
 }
 

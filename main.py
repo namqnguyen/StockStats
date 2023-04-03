@@ -59,7 +59,7 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list
 	for ticker in tickers:
 		docs = await mongo_db[ticker].find(conditions).to_list(length=5000)
 		data[ticker] = {}
-		data[ticker]['labels'] = []
+		data[ticker]['times'] = []
 		data[ticker]['bids'] = []
 		data[ticker]['asks'] = []
 		data[ticker]['lasts'] = []
@@ -70,7 +70,7 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list
 			et = item['time'].split(' ')[2]
 			time = doc['datetime'] + timedelta(hours=int(int(TIMES[et])/100))
 			# datetime.strptime(f'{t[0]} {t[1]} {TIMES[t[2]]}', '%I:%M:%S %p %z') # item['time'].split(' ')[0]
-			data[ticker]['labels'].append(time.strftime('%H:%M:%S'))
+			data[ticker]['times'].append(time.strftime('%H:%M:%S'))
 			data[ticker]['bids'].append(float(item['bid']))
 			data[ticker]['asks'].append(float(item['ask']))
 			data[ticker]['lasts'].append(float(item['last']))
@@ -88,8 +88,8 @@ async def read_root(request: Request):
 
 
 def get_current_datetime() -> dict:
-	utcdt = datetime.now(tz=pytz.utc).replace(tzinfo=None) - timedelta(2)
-	nydt = datetime.now(tz=pytz.timezone('America/New_York')).replace(tzinfo=None) - timedelta(2)
+	utcdt = datetime.now(tz=pytz.utc).replace(tzinfo=None) #- timedelta(1)
+	nydt = datetime.now(tz=pytz.timezone('America/New_York')).replace(tzinfo=None) #- timedelta(1)
 	diff = (utcdt - nydt).seconds
 	offset_hrs = math.ceil(diff / 3600)
 	begin = datetime.combine(utcdt, Time.min)
@@ -123,9 +123,6 @@ async def ticker_data(request: Request, ticker: str = None, bm: int|str = None, 
 		else:
 			dt['begin'] = dt['utcdt'] - timedelta(minutes=bm)
 
-	dt['end'] = dt['end'] - timedelta(hours=4)
-	ld(dt['begin'])
-	ld(dt['end'])
 	data = await get_ticker_data([ticker], dt['begin'], dt['end'])
 	if request.headers.get('Content-Type') == 'application/json':
 		return ORJSONResponse(data, status_code=200)
