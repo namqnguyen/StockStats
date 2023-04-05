@@ -10,128 +10,154 @@
 			function doFilter() {
 				window.location.href = '/{{ticker}}?from_time=' + $("#from_time").val() + '&to_time=' + $("#to_time").val();
 			}
-		</script>
-		<script>
-			const ticker = '{{ticker}}';
-			let dataObj = {
-				times: {{data[ticker]['times']|safe}},
-				bids: {{data[ticker]['bids']}},
-				asks: {{data[ticker]['asks']}},
-				lasts: {{data[ticker]['lasts']}},
-			}
 
-			function getChartData() {
-				return {
-					labels: dataObj.times,
-					datasets: [
-						{
-							label: 'bid',
-							data: dataObj.bids,
-							borderWidth: 1,
-							yAxisID: 'y1',
-							borderColor: "green",
-						},
-						{
-							label: 'ask',
-							data: dataObj.asks,
-							borderWidth: 1,
-							yAxisID: 'y1',
-							borderColor: "red",
-						},
-						{
-							label: 'last',
-							data: dataObj.lasts,
-							borderWidth: 1,
-							yAxisID: 'y1',
-							borderColor: "#FFC300",
-						},
-					],
-				};
-			}
-
-			let chartOptions = {
-				responsive: true,
-				stacked: true,
-				//maintainAspectRatio: false,
-    			animation: {
-        			duration: 0
-    			},
-				plugins: {
-					title: {
-						display: true,
-						text: ticker
-					}
-				},
-				scales: {
-					y: {
-						type: 'linear',
-						position: 'left',
-						// min: 33,
-						// max: 35,
-						display: false,
-						grid: {
-							drawOnChartArea: false
-						}
-					},
-					y1: {
-						type: 'linear',
-						position: 'right',
-					},
-				},
-				plugins: {
-					zoom: {
-						pan: {
-							enabled: false,
-							mode: 'xy',
-						},
-						zoom: {
-							wheel: {
-								enabled: true,
-							},
-							pinch: {
-								enabled: true
-							},
-							drag: {
-								enabled: true
-							},
-							mode: 'xy',
-						},
-					}
-				},
-			};
-
-			function getChartConfig() {
-				return {
-					type: 'line',
-					data: getChartData(),
-					options: chartOptions,
-				};
-			}
 		</script>
 	</head>
 
 	<div class="chart-wrapper">
-		<h2>{{ticker}} |
+		<h2 id="timesheader">{{ticker}} |
 			<input type="text" id="from_time" value="" size="3" />
 			<input type="text" id="to_time" value="" size="3" />
 			<button type="button" id="range_button" onclick="doFilter()">Select</button>
-			<a href="{{key}}?bm=-1">Today</a> |
-			<a href="{{key}}?bm=0">Open</a> |
-			<a href="{{key}}?bm=60">60 minutes</a> |
-			<a href="{{key}}?bm=45">45 minutes</a> |
-			<a href="{{key}}?bm=30">30 minutes</a> |
-			<a href="{{key}}?bm=15">15 minutes</a> |
-			<a href="{{key}}?bm=10">10 minutes</a> |
-			<a href="{{key}}?bm=5">5 minutes</a> |
-			<a href="{{key}}?bm=1">2 minutes</a> |
-			<a href="{{key}}?bm=1">1 minute</a>
+			<!-- <a href="{{key}}?bm=-1" id="today">Today</a> |
+			<a href="{{key}}?bm=0" id="open">Open</a> |
+			<a href="{{key}}?bm=60" id="60min">60 minutes</a> |
+			<a href="{{key}}?bm=45" id="45min">45 minutes</a> |
+			<a href="{{key}}?bm=30" id="30min">30 minutes</a> |
+			<a href="{{key}}?bm=15" id="15min">15 minutes</a> |
+			<a href="{{key}}?bm=10" id="10min">10 minutes</a> |
+			<a href="{{key}}?bm=5" id="5min">5 minutes</a> |
+			<a href="{{key}}?bm=1" id="2min">2 minutes</a> |
+			<a href="{{key}}?bm=1" id="1min">1 minute</a> -->
 		</h2>
 		<canvas id="{{ticker}}"></canvas>
 	</div>
 
 	<script>
+		timesArr = [-1, 0, 180, 120, 60, 45, 30, 15, 10, 5, 2, 1];
+		timesArr.forEach(element => {
+			let text = element + (element > 1 ? ' mins' : ' min');
+			if (element === 0) {
+				text = 'OpCl';
+			} else if (element === -1) {
+				text = 'Today';
+			}
+			a = $('<a href="#">' + text + '</a>');
+			a.click( e => {e.preventDefault(); showChartMinsBack(element); return false} );
+			$('#timesheader').append(' | ')
+			$('#timesheader').append(a);
+		});
+		//$('#60min').click( function(e) {e.preventDefault(); showChartMinsBack(); return false; } );
+		//$('#60min').click( function(e) {e.preventDefault(); showChartMinsBack(); return false; } );
+
+		const ticker = '{{ticker}}';
+		let dataObj = {
+			times: {{data[ticker]['times']|safe}},
+			bids: {{data[ticker]['bids']}},
+			asks: {{data[ticker]['asks']}},
+			lasts: {{data[ticker]['lasts']}},
+		};
+
+		function getChartData(tbal) {
+			if (typeof tbal === 'undefined' || tbal === null) {
+				return {};
+				// tbal = {times: [], bids: [], asks: [], lasts: []};
+			}
+			return {
+				labels: tbal.times,
+				datasets: [
+					{
+						label: 'bid',
+						data: tbal.bids,
+						borderWidth: 1,
+						yAxisID: 'y1',
+						borderColor: "green",
+					},
+					{
+						label: 'ask',
+						data: tbal.asks,
+						borderWidth: 1,
+						yAxisID: 'y1',
+						borderColor: "red",
+					},
+					{
+						label: 'last',
+						data: tbal.lasts,
+						borderWidth: 1,
+						yAxisID: 'y1',
+						borderColor: "#FFC300",
+					},
+				],
+			};
+		}
+
+		let chartOptions = {
+			responsive: true,
+			stacked: true,
+			//maintainAspectRatio: false,
+			animation: {
+				duration: 0
+			},
+			plugins: {
+				title: {
+					display: true,
+					text: ticker
+				}
+			},
+			scales: {
+				y: {
+					type: 'linear',
+					position: 'left',
+					// min: 33,
+					// max: 35,
+					display: false,
+					grid: {
+						drawOnChartArea: false
+					}
+				},
+				y1: {
+					type: 'linear',
+					position: 'right',
+				},
+			},
+			plugins: {
+				zoom: {
+					pan: {
+						enabled: false,
+						mode: 'xy',
+					},
+					zoom: {
+						wheel: {
+							enabled: true,
+						},
+						pinch: {
+							enabled: true
+						},
+						drag: {
+							enabled: true
+						},
+						mode: 'xy',
+					},
+				},
+				tooltip: {
+					enabled: false
+				},
+			},
+
+		};
+
+		function getChartConfig(type, data, options) {
+			return {
+				type: type,
+				data: data,
+				options: options,
+			};
+		}
+
+		// Chart.defaults.global.showTooltips = false;
 		const ctx = document.getElementById('{{ticker}}');
 		let stockChart = new Chart(ctx, getChartConfig());
+		let lastTimeChecked = null;
 
 		const getNewTickerData = async (url) => {
 			const response = await fetch(url, {
@@ -145,12 +171,17 @@
 		}
 
 		const updateChartWithNewData = async () => {
-			begin = dataObj.times[dataObj.times.length - 1].split(':');
-			begin[0] = parseInt(begin[0]);  // ET
+			if (dataObj.times.length == 0) {
+				return;
+			}
+			end = dataObj.times[dataObj.times.length - 1];
+			// if (end === lastTimeChecked) {
+			// 	return;
+			// }
+			// lastTimeChecked = end;
+			begin = end.split(':');
+			// begin[0] = parseInt(begin[0]);  // ET
 			begin[2] = parseInt(begin[2]) + 1;  // want 1 second more
-
-			//end = begin.concat([]);
-			//end[0] += 1;
 			
 			url = ticker + '?from_time=' + begin.join(':');
 			newData = await getNewTickerData(url);
@@ -162,7 +193,7 @@
 				dataObj.lasts = dataObj.lasts.concat(newData[ticker].lasts);
 
 				stockChart.destroy();
-				stockChart = new Chart(ctx, getChartConfig());
+				stockChart = new Chart(ctx, getChartConfig('line', getChartData(dataObj), chartOptions));
 			}
 		}
 
@@ -173,5 +204,43 @@
 		}
 
 		runUpdateInterval();
+
+
+		idx = 0
+		function showChartMinsBack(minsBack) {
+			last = dataObj.times[dataObj.times.length - 1];
+			hms = last.split(':');
+			let hrs = parseInt(hms[0])
+			let mins = parseInt(hms[1]);
+			let secs = parseInt(hms[2]);
+			let openSince = 9*60 + 30;   // Open time, 9:30 AM
+			let idx = 0;
+			let newDataObj = dataObj;
+
+			if ( minsBack === 0 && hrs*60 + mins >= openSince) {
+				minsBack = hrs*60 + mins - openSince;
+			}
+
+			if (minsBack > 0) {
+				backAsSeconds = (hrs*60 + mins - minsBack)*60 + secs;
+				for (const [i, value] of dataObj.times.entries()) {
+					let time = value.split(':');
+					let asSecs = parseInt(time[0])*3600 + parseInt(time[1]*60) + parseInt(time[2]);
+					if (asSecs > backAsSeconds) {
+						idx = i;
+						break;
+					}
+				}
+				newDataObj = {
+					times: dataObj.times.slice(idx),
+					bids: dataObj.bids.slice(idx),
+					asks: dataObj.asks.slice(idx),
+					lasts: dataObj.lasts.slice(idx)
+				};
+			}
+			stockChart.destroy();
+			stockChart = new Chart(ctx, getChartConfig('line', getChartData(newDataObj), chartOptions));
+
+		}
 	</script>
 </html>

@@ -78,7 +78,7 @@ function run() {
 
 const TICKERS = ['WAL'];
 const KEEP_ALIVE_INTERVAL = 180*1000
-let KA = setInterval(keepAlive, KEEP_ALIVE_INTERVAL);
-let S = 5;
+// let KA = setInterval(keepAlive, KEEP_ALIVE_INTERVAL);
+let S = 1;
 let P = 0;
 setTimeout(run, 100);
