@@ -1,4 +1,13 @@
 
+const exists = (what) => {
+  try {
+    tmp = eval(what);
+    return (tmp !== 'undefined' && tmp !== 'null') ? true : false;
+  } catch (e) {
+    return false;
+  }  
+}
+
 let getTickerDataFromTDA = async (ticker) => {
   const response = await fetch("https://invest.ameritrade.com/grid/m/equityOrderQuote/json", {
     "headers": {
@@ -27,7 +36,7 @@ let getTickerDataFromTDA = async (ticker) => {
 }
 
 
-const saveTickerData = async (ticker, json_str) => {
+let saveTickerData = async (ticker, json_str) => {
   const response = await fetch('http://127.0.0.1:5000/'+ticker, {
     method: 'POST',
     body: json_str,
@@ -39,12 +48,15 @@ const saveTickerData = async (ticker, json_str) => {
   return await response.json();
 }
 
-
-function sleep(ms) {
+const sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const getAndSave = async () => {
+let getAndSave = async () => {
+  if (!exists('dojoConfig') || !exists('dojoConfig.transactionToken')) {
+    console.log('no transaction token; got logged out?');
+    return;
+  }
   for (const ticker of TICKERS) {
     const ticker_data = await getTickerDataFromTDA(ticker);
     const db_response = await saveTickerData(ticker, JSON.stringify(ticker_data));
@@ -54,7 +66,7 @@ const getAndSave = async () => {
 }
 
 
-function keepAlive() {
+const keepAlive = () => {
   document.getElementById('dtExpand').click();
   document.getElementById('navAccOverview').click();
   sleep(5000);
@@ -82,3 +94,10 @@ const KEEP_ALIVE_INTERVAL = 180*1000
 let S = 1;
 let P = 0;
 setTimeout(run, 100);
+
+
+const injectJS = (srcURL) => {
+  var script = document.createElement("script");
+  script.src = 'http://127.0.0.1:5000/assets/js/browser_code.js';
+  getTickerWindow.document.head.appendChild(script);
+}

@@ -8,7 +8,7 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
 		<script>
 			function doFilter() {
-				window.location.href = '/{{ticker}}?from_time=' + $("#from_time").val() + '&to_time=' + $("#to_time").val();
+				window.location.href = '/{{ticker}}?date=' + $("#date").val() + '&from_time=' + $("#from_time").val() + '&to_time=' + $("#to_time").val();
 			}
 
 		</script>
@@ -16,9 +16,10 @@
 
 	<div class="chart-wrapper">
 		<h2 id="timesheader">
-			<span>{{ticker}}</span>
-			<input type="text" id="from_time" value="" size="3" />
-			<input type="text" id="to_time" value="" size="3" />
+			<span id="ticker">{{ticker}}</span>
+			<input type="text" id="date" value="{{date}}" size="7" />
+			<input type="text" id="from_time" value="{{from_time}}" size="3" />
+			<input type="text" id="to_time" value="{{to_time}}" size="3" />
 			<button type="button" id="range_button" onclick="doFilter()">Select</button>
 			| <input type="text" id="skipInterval" value="" size="2" /> <button id="resetInterval">res</button>
 			<span id="timesContainer"></span>
@@ -48,6 +49,16 @@
 		$('#skipInterval').blur( (e) => { DATAINTERVAL = parseInt(e.target.value) } );
 		$('#skipInterval').keypress( (e) => { if (e.which == 13) { DATAINTERVAL = parseInt(e.target.value) } } );
 		$('#resetInterval').click( (e) => { $('#skipInterval').val(1); $('#skipInterval').blur(); } )
+		$('#ticker').click( (e) => { stockChart.resetZoom(); } );
+
+		const exists = (what) => {
+			try {
+				tmp = eval(what);
+				return (tmp !== 'undefined' && tmp !== 'null') ? true : false;
+			} catch (e) {
+				return false;
+			}
+		}
 
 		const ticker = '{{ticker}}';
 		let dataObj = {
@@ -57,39 +68,39 @@
 			lasts: {{data[ticker]['lasts']}},
 		};
 
-		let RSIPeriod = 14;
-		let RSI = [];
+		let RSIObj = {periods: 14, data: [], previousAvgGain: 0, previousAvgLoss: 0}
 		function calculateRSI(periods) {
+			if (dataObj.lasts.length < RSIObj.periods) {
+				return RSIObj;
+			}
 			let periodSumGain = 0;
 			let periodSumLoss = 0;
-			let previousAvgGain = 0;
-			let previousAvgLoss = 0;
 			for (const [i, n] of dataObj.lasts.entries()) {
 				if (i==0) { continue; }
+				let diff = Math.abs(n - dataObj.lasts[i-1]);
+				let gain = (n > dataObj.lasts[i-1]) ? diff: 0;
+				let loss = (n < dataObj.lasts[i-1]) ? diff: 0;
 				if (i < periods) {
-					periodSumGain += (n > dataObj.lasts[i-1]) ? n : 0;
-					periodSumLoss += (n < dataObj.lasts[i-1]) ? n : 0;
+					periodSumGain += gain;
+					periodSumLoss += loss;
 				} else if (i == periods) {
-					previousAvgGain = periodSumGain / periods;
-					previousAvgLoss = periodSumLoss / periods;
-					let rs = previousAvgGain / previousAvgLoss;
-					let rsi = 100 - (100 / (1 + rs));
-					RSI.push(rsi);
+					RSIObj.previousAvgGain = periodSumGain / RSIObj.periods;
+					RSIObj.previousAvgLoss = periodSumLoss / RSIObj.periods;
+					let rs = RSIObj.previousAvgGain / RSIObj.previousAvgLoss;
+					let rsi = 100 - (100 / (1 + rs)).toFixed(2);
+					RSIObj.data.push(rsi);
 				} else {
-					let diff = Math.abs(n - dataObj.lasts[i-1]);
-					let gain = (n > dataObj.lasts[i-1]) ? diff: 0;
-					let loss = (n < dataObj.lasts[i-1]) ? diff: 0;
-					let avgGain = ( (previousAvgGain * (periods-1)) + gain ) / periods;
-					let avgLoss = ( (previousAvgLoss * (periods-1)) + loss ) / periods;
+					let avgGain = ( (RSIObj.previousAvgGain * (RSIObj.periods-1)) + gain ) / RSIObj.periods;
+					let avgLoss = ( (RSIObj.previousAvgLoss * (RSIObj.periods-1)) + loss ) / RSIObj.periods;
 					let rs = avgGain / avgLoss;
 					let rsi = (100 - (100 / (1 + rs))).toFixed(2);
-					RSI.push(rsi);
-					previousAvgGain = avgGain;
-					previousAvgLoss = avgLoss;
+					RSIObj.data.push(rsi);
+					RSIObj.previousAvgGain = avgGain;
+					RSIObj.previousAvgLoss = avgLoss;
 				}
 			}
 			// PERIOD=14; RSI = 100 - (100/(1+RS));  RS = avg.gain / avg.loss
-			return RSI;
+			return RSIObj;
 		}
 
 		function getChartData(tbal) {
@@ -172,10 +183,10 @@
 					},
 					zoom: {
 						wheel: {
-							enabled: true,
+							enabled: false,
 						},
 						pinch: {
-							enabled: true
+							enabled: false
 						},
 						drag: {
 							enabled: true
@@ -187,7 +198,38 @@
 					enabled: false
 				},
 			},
+            elements:{
+                point:{
+                    borderWidth: 0,
+                    radius: 1,
+                    //backgroundColor: 'rgba(0,0,0,0)'
+                }
+            },
+			legend: {
+				onHover: function(event, legendItem) {
+          			document.getElementById("canvas").style.cursor = 'pointer';
+        		},
+				onClick: function(e, legendItem) {
+					var index = legendItem.datasetIndex;
+					var ci = this.chart;
+					var alreadyHidden = (ci.getDatasetMeta(index).hidden === null) ? false : ci.getDatasetMeta(index).hidden;
 
+					ci.data.datasets.forEach(function(e, i) {
+						var meta = ci.getDatasetMeta(i);
+						if (i !== index) {
+							if (!alreadyHidden) {
+								meta.hidden = meta.hidden === null ? !meta.hidden : null;
+							} else if (meta.hidden === null) {
+								meta.hidden = true;
+							}
+						} else if (i === index) {
+							meta.hidden = null;
+						}
+					});
+
+					ci.update();
+				},
+			},
 		};
 
 		function getChartConfig(type, data, options) {
@@ -213,9 +255,6 @@
 			return await response.json();
 		}
 
-		function exists(what) {
-			return (what !== 'undefined' && what !== 'null') ? true : false;
-		}
 
 		function getDataFromIndex(idx) {
 			if ( !exists(idx) ) {

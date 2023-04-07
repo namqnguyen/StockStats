@@ -58,7 +58,7 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list
 	data = {}
 	for ticker in tickers:
 		# docs = await mongo_db[ticker].find(conditions).to_list(length=5000)
-		docs = await mongo_db[ticker].find(conditions, {'datetime': 1, 'content.items': {'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1}}).to_list(length=5000)
+		docs = await mongo_db[ticker].find(conditions, {'datetime': 1, 'content.items': {'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1}}).to_list(length=50000)
 		data[ticker] = {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'low': 0, 'high': 0}
 		for doc in docs:
 			items = doc['content']['items']
@@ -92,19 +92,22 @@ async def read_root(request: Request):
 	return ''
 
 
-def get_current_datetime() -> dict:
+def get_datetime(date: str = None) -> dict:
 	utcdt = datetime.now(tz=pytz.utc).replace(tzinfo=None) #- timedelta(1)
 	nydt = datetime.now(tz=pytz.timezone('America/New_York')).replace(tzinfo=None) #- timedelta(1)
 	diff = (utcdt - nydt).seconds
 	offset_hrs = math.ceil(diff / 3600)
-	begin = datetime.combine(utcdt, Time.min)
+	if date is not None:
+		begin = datetime.strptime(date, '%Y-%m-%d')
+	else:
+		begin = datetime.combine(utcdt, Time.min)
 	end = begin + timedelta(1)
 	return {"begin": begin, "end": end, "offset_hrs": offset_hrs, "utcdt": utcdt, "nydt": nydt}
 
 
 @app.get("/{ticker}")
-async def ticker_data(request: Request, ticker: str = None, bm: int|str = None, from_time: int|str = None, to_time: int|str = None):
-	dt = get_current_datetime()
+async def ticker_data(request: Request, ticker: str = None, bm: int|str = None, date: str = None, from_time: int|str = None, to_time: int|str = None):
+	dt = get_datetime(date)
 	if type(to_time) is int and to_time > 0:
 		dt['end'] =  dt['begin'] + timedelta(hours = to_time + dt['offset_hrs'])
 	elif type(to_time) is str and to_time != '':
@@ -132,7 +135,7 @@ async def ticker_data(request: Request, ticker: str = None, bm: int|str = None, 
 	if request.headers.get('Content-Type') == 'application/json':
 		return ORJSONResponse(data, status_code=200)
 	else:
-		html = templates.get_template('tickers.html').render({"request": request, "data": data, "ticker": ticker})
+		html = templates.get_template('tickers.html').render({"request": request, "data": data, "ticker": ticker, "date": date, "from_time": from_time, "to_time": to_time})
 		return HTMLResponse(content=html, status_code=200)
 
 
