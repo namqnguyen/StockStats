@@ -23,8 +23,8 @@ ld = logging.debug
 
 app = FastAPI()
 
-app.mount("/rootpath", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="static")
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
+templates = Jinja2Templates(directory="templates")
 
 
 origins = [
@@ -147,7 +147,7 @@ async def insert_ticker_data(request: Request, ticker: str, data = Body()) -> Ob
 	data['datetime'] = datetime.strptime(dt, '%I:%M:%S %p %z %m/%d/%y')
 
 	res = await mongo_db[ticker].insert_one(data)
-	return {"id": str(res.inserted_id)}
+	return {"id": str(res.inserted_id), 'dt': data['datetime'].strftime('%H:%M:%S')}
 
 
 

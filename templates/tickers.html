@@ -26,6 +26,7 @@
 			| <span id="high" style="color: green">{{data[ticker]['high']}}</span>
 		</h2>
 		<canvas id="{{ticker}}"></canvas>
+		<canvas id="{{ticker}}"></canvas>
 	</div>
 
 	<script>
@@ -57,12 +58,12 @@
 		};
 
 		let RSIPeriod = 14;
+		let RSI = [];
 		function calculateRSI(periods) {
 			let periodSumGain = 0;
 			let periodSumLoss = 0;
 			let previousAvgGain = 0;
 			let previousAvgLoss = 0;
-			let RSI = [];
 			for (const [i, n] of dataObj.lasts.entries()) {
 				if (i==0) { continue; }
 				if (i < periods) {
