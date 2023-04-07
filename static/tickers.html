@@ -15,11 +15,15 @@
 	</head>
 
 	<div class="chart-wrapper">
-		<h2 id="timesheader">{{ticker}} |
+		<h2 id="timesheader">
+			<span>{{ticker}}</span>
 			<input type="text" id="from_time" value="" size="3" />
 			<input type="text" id="to_time" value="" size="3" />
 			<button type="button" id="range_button" onclick="doFilter()">Select</button>
-			| <input type="text" id="skipInterval" value="" size="2" />
+			| <input type="text" id="skipInterval" value="" size="2" /> <button id="resetInterval">res</button>
+			<span id="timesContainer"></span>
+			| <span id="low" style="color:red">{{data[ticker]['low']}}</span>
+			| <span id="high" style="color: green">{{data[ticker]['high']}}</span>
 		</h2>
 		<canvas id="{{ticker}}"></canvas>
 	</div>
@@ -29,19 +33,20 @@
 		timesArr.forEach(element => {
 			let text = element + (element > 1 ? ' mins' : ' min');
 			if (element === 0) {
-				text = 'OpCl';
+				text = 'Open';
 			} else if (element === -1) {
 				text = 'Today';
 			}
 			a = $('<a href="#">' + text + '</a>');
 			a.click( e => {e.preventDefault(); showChartMinsBack(element); return false} );
-			$('#timesheader').append(' | ')
-			$('#timesheader').append(a);
+			$('#timesContainer').append(' | ')
+			$('#timesContainer').append(a);
 		});
 
 		let DATAINTERVAL = 1;
 		$('#skipInterval').blur( (e) => { DATAINTERVAL = parseInt(e.target.value) } );
 		$('#skipInterval').keypress( (e) => { if (e.which == 13) { DATAINTERVAL = parseInt(e.target.value) } } );
+		$('#resetInterval').click( (e) => { $('#skipInterval').val(1); $('#skipInterval').blur(); } )
 
 		const ticker = '{{ticker}}';
 		let dataObj = {
@@ -51,7 +56,40 @@
 			lasts: {{data[ticker]['lasts']}},
 		};
 
-
+		let RSIPeriod = 14;
+		function calculateRSI(periods) {
+			let periodSumGain = 0;
+			let periodSumLoss = 0;
+			let previousAvgGain = 0;
+			let previousAvgLoss = 0;
+			let RSI = [];
+			for (const [i, n] of dataObj.lasts.entries()) {
+				if (i==0) { continue; }
+				if (i < periods) {
+					periodSumGain += (n > dataObj.lasts[i-1]) ? n : 0;
+					periodSumLoss += (n < dataObj.lasts[i-1]) ? n : 0;
+				} else if (i == periods) {
+					previousAvgGain = periodSumGain / periods;
+					previousAvgLoss = periodSumLoss / periods;
+					let rs = previousAvgGain / previousAvgLoss;
+					let rsi = 100 - (100 / (1 + rs));
+					RSI.push(rsi);
+				} else {
+					let diff = Math.abs(n - dataObj.lasts[i-1]);
+					let gain = (n > dataObj.lasts[i-1]) ? diff: 0;
+					let loss = (n < dataObj.lasts[i-1]) ? diff: 0;
+					let avgGain = ( (previousAvgGain * (periods-1)) + gain ) / periods;
+					let avgLoss = ( (previousAvgLoss * (periods-1)) + loss ) / periods;
+					let rs = avgGain / avgLoss;
+					let rsi = (100 - (100 / (1 + rs))).toFixed(2);
+					RSI.push(rsi);
+					previousAvgGain = avgGain;
+					previousAvgLoss = avgLoss;
+				}
+			}
+			// PERIOD=14; RSI = 100 - (100/(1+RS));  RS = avg.gain / avg.loss
+			return RSI;
+		}
 
 		function getChartData(tbal) {
 			if ( !exists(tbal) ) {
@@ -208,7 +246,8 @@
 				dataObj.lasts = dataObj.lasts.concat(newData[ticker].lasts);
 				
 				data = getDataFromIndex(IDX);
-
+				$('#low').text().replace(newData[ticker].low)
+				$('#high').text().replace(newData[ticker].high)
 				stockChart.destroy();
 				stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions));
 			}

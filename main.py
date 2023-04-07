@@ -57,14 +57,14 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list
 	conditions = {'datetime': {'$gte': begin, '$lte': end}}
 	data = {}
 	for ticker in tickers:
-		docs = await mongo_db[ticker].find(conditions).to_list(length=5000)
-		data[ticker] = {}
-		data[ticker]['times'] = []
-		data[ticker]['bids'] = []
-		data[ticker]['asks'] = []
-		data[ticker]['lasts'] = []
+		# docs = await mongo_db[ticker].find(conditions).to_list(length=5000)
+		docs = await mongo_db[ticker].find(conditions, {'datetime': 1, 'content.items': {'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1}}).to_list(length=5000)
+		data[ticker] = {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'low': 0, 'high': 0}
 		for doc in docs:
-			item = doc['content']['items'][0]
+			items = doc['content']['items']
+			if len(items) == 0:
+				continue
+			item = items[0]
 			if item['bid'] == '':
 				continue
 			et = item['time'].split(' ')[2]
@@ -74,6 +74,11 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list
 			data[ticker]['bids'].append(float(item['bid']))
 			data[ticker]['asks'].append(float(item['ask']))
 			data[ticker]['lasts'].append(float(item['last']))
+			try:
+				data[ticker]['low'] = float(item['low'])
+				data[ticker]['high'] = float(item['high'])
+			except:
+				pass
 
 	return data
 
