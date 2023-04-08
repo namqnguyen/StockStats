@@ -68,20 +68,22 @@
 			lasts: {{data[ticker]['lasts']}},
 		};
 
-		let RSIObj = {periods: 14, data: [], previousAvgGain: 0, previousAvgLoss: 0}
+		let RSIObj = {periods: 14, data: [], previousAvgGain: 0.0, previousAvgLoss: 0.0}
 		function calculateRSI(periods) {
 			if (dataObj.lasts.length < RSIObj.periods) {
 				return RSIObj;
 			}
 			let periodSumGain = 0.0;
 			let periodSumLoss = 0.0;
+			// let tgain = [0.0, 0.0, 0.06, 0.0, 0.72, 0.50, 0.27, 0.33, 0.42, 0.24, 0.0, 0.14, 0.0, 0.67, 0.0, 0.0, 0.03, 0.38, 0.0, 0.0, 0.57, 0.04, 0.0, 0.74, 0.0, 0.0, 0.0, 0.15, 0.04, 0.35, 0.0, 0.0, 0.47]
+			// let tloss = [0.0, 0.25, 0.0, 0.54, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.19, 0.0, 0.42, 0.0, 0.0, 0.28, 0.0, 0.0, 0.19, 0.58, 0.0, 0.0, 0.54, 0.0, 0.67, 0.43, 1.33, 0.0, 0.0, 0.0, 1.15, 0.76, 0.0]
 			for (const [i, n] of dataObj.lasts.entries()) {
 				if (i==0) { continue; }
 				let diff = parseFloat(Math.abs(n - dataObj.lasts[i-1]));
 				let gain = (n > dataObj.lasts[i-1]) ? diff: 0.0;
 				let loss = (n < dataObj.lasts[i-1]) ? diff: 0.0;
-				let rs = 0.0;
-				let rsi = 0.0;
+				// let gain = (tgain[i] > 0.0) ? tgain[i] : 0.0;
+				// let loss = (tloss[i] > 0.0) ? tloss[i] : 0.0;
 				if (i < periods) {
 					periodSumGain += gain;
 					periodSumLoss += loss;
@@ -89,31 +91,44 @@
 				} else if (i == periods) {
 					RSIObj.previousAvgGain = periodSumGain / RSIObj.periods;
 					RSIObj.previousAvgLoss = periodSumLoss / RSIObj.periods;
+					let rsi = 100.0;
 					if (RSIObj.previousAvgLoss > 0.0) {
-						rs = parseFloat(RSIObj.previousAvgGain / RSIObj.previousAvgLoss)
+						let rs = parseFloat(RSIObj.previousAvgGain / RSIObj.previousAvgLoss)
 						rsi = parseFloat(100 - (100 / (1 + rs)).toFixed(4));
-					} else {
-						rsi = 100.0
 					}
-					// console.log(RSIObj.previousAvgGain, RSIObj.previousAvgLoss, rs, rsi);
 					RSIObj.data.push(rsi)
 				} else {
-					let avgGain = ( (RSIObj.previousAvgGain * (RSIObj.periods-1)) + gain ) / RSIObj.periods;
-					let avgLoss = ( (RSIObj.previousAvgLoss * (RSIObj.periods-1)) + loss ) / RSIObj.periods;
-					if (avgLoss > 0.0) {
-						rs = parseFloat(RSIObj.previousAvgGain / RSIObj.previousAvgLoss)
-						rsi = parseFloat(100 - (100 / (1 + rs)).toFixed(4));
-					} else {
-						rsi = 100.0
-					}
-					// console.log(rs, rsi);
-					RSIObj.data.push(rsi);
-					RSIObj.previousAvgGain = avgGain;
-					RSIObj.previousAvgLoss = avgLoss;
+					addToRSI(gain, loss)
+					// let avgGain = ( (RSIObj.previousAvgGain * (RSIObj.periods-1)) + gain ) / RSIObj.periods;
+					// let avgLoss = ( (RSIObj.previousAvgLoss * (RSIObj.periods-1)) + loss ) / RSIObj.periods;
+					// let rsi = 100.0;
+					// if (avgLoss > 0.0) {
+					// 	let rs = parseFloat(RSIObj.previousAvgGain / RSIObj.previousAvgLoss)
+					// 	rsi = parseFloat(100 - (100 / (1 + rs)).toFixed(4));
+					// }
+					// RSIObj.data.push(rsi);
+					// RSIObj.previousAvgGain = avgGain;
+					// RSIObj.previousAvgLoss = avgLoss;
 				}
+				// if (i == tgain.length) {
+				// 	break;
+				// }
 			}
 			// PERIOD=14; RSI = 100 - (100/(1+RS));  RS = avg.gain / avg.loss
 			return RSIObj;
+		}
+
+		function addToRSI(gain, loss) {
+			let avgGain = ( (RSIObj.previousAvgGain * (RSIObj.periods-1)) + gain ) / RSIObj.periods;
+			let avgLoss = ( (RSIObj.previousAvgLoss * (RSIObj.periods-1)) + loss ) / RSIObj.periods;
+			let rsi = 100.0;
+			if (avgLoss > 0.0) {
+				let rs = parseFloat(RSIObj.previousAvgGain / RSIObj.previousAvgLoss)
+				rsi = parseFloat(100 - (100 / (1 + rs)).toFixed(4));
+			}
+			RSIObj.data.push(rsi);
+			RSIObj.previousAvgGain = avgGain;
+			RSIObj.previousAvgLoss = avgLoss;
 		}
 
 		function getChartData(tbal) {
@@ -208,7 +223,7 @@
 					},
 				},
 				tooltip: {
-					enabled: false
+					enabled: true
 				},
 			},
             elements:{
@@ -271,7 +286,7 @@
 			};
 		}
 
-		const updateChartWithNewData = async () => {
+		const updateChartsWithNewData = async () => {
 			if (dataObj.times.length == 0) {
 				return;
 			}
@@ -283,16 +298,21 @@
 			newData = await getNewTickerData(url);
 
 			if (newData[ticker].times.length > 0) {
+				// ticker price data and chart
 				dataObj.times = dataObj.times.concat(newData[ticker].times)
 				dataObj.bids = dataObj.bids.concat(newData[ticker].bids);
 				dataObj.asks = dataObj.asks.concat(newData[ticker].asks);
 				dataObj.lasts = dataObj.lasts.concat(newData[ticker].lasts);
-				
 				data = getDataFromIndex(IDX);
 				$('#low').text().replace(newData[ticker].low)
 				$('#high').text().replace(newData[ticker].high)
 				stockChart.destroy();
 				stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions));
+
+				// RSI data and chart
+				calculateRSI(RSIObj.periods);
+				rsiChart.destroy();
+				rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(), RSIChartOptions));
 			}
 		}
 
@@ -300,7 +320,7 @@
 		let I = 1;
 		function runUpdateInterval() {
 			setTimeout(runUpdateInterval, I*1000);
-			updateChartWithNewData();
+			updateChartsWithNewData();
 		}
 
 		runUpdateInterval();
@@ -380,18 +400,21 @@
 		};
 
 		calculateRSI(RSIObj.periods);
-		let overbought = [...new Array(RSIObj.data.length)].map(()=>70);
-		let oversold = [...new Array(RSIObj.data.length)].map(()=>30);
-		let rsiChartData = {
-			labels: dataObj.times,
-			datasets: [
-				{label: 'rsi', data: RSIObj.data},
-				{label: 'overbought', data: overbought},
-				{label: 'oversold', data: oversold},
-			],
+		const getRSIChartData = () => {
+			let overbought = [...new Array(RSIObj.data.length)].map(()=>70);
+			let oversold = [...new Array(RSIObj.data.length)].map(()=>30);
+			let rsiChartData = {
+				labels: dataObj.times,
+				datasets: [
+					{label: 'rsi', data: RSIObj.data, borderWidth: 1,},
+					{label: 'overbought', data: overbought, borderWidth: 1,},
+					{label: 'oversold', data: oversold, borderWidth: 1,},
+				],
+			}
+			return rsiChartData;
 		}
 
-		rsiChart = new Chart($('#RSIchart'), getChartConfig('line', rsiChartData, RSIChartOptions));
+		rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(), RSIChartOptions));
 
 	</script>
 </html>
