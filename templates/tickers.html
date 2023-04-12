@@ -31,7 +31,7 @@
 	</div>
 
 	<script>
-		timesArr = [-1, 0, 180, 120, 60, 45, 30, 15, 10, 5, 2, 1];
+		timesArr = [-1, 0, 180, 120, 60, 45, 30, 20, 15, 10, 5, 2, 1];
 		timesArr.forEach(element => {
 			let text = element + (element > 1 ? ' mins' : ' min');
 			if (element === 0) {
@@ -68,37 +68,39 @@
 			lasts: {{data[ticker]['lasts']}},
 		};
 
-		let RSIObj = {periods: 14, data: [], previousAvgGain: 0.0, previousAvgLoss: 0.0}
-		function calculateRSI(periods) {
-			if (dataObj.lasts.length < RSIObj.periods) {
-				return RSIObj;
+		let RSIObj = {periods: 14, data: {times: [1], RSI: []}, previousAvgGain: 0.0, previousAvgLoss: 0.0}
+		function calculateRSI(periods, data) {
+			periods = 14;
+			let newRSIObj = {periods: periods, data: {times:[1], RSI: []}, previousAvgGain: 0.0, previousAvgLoss: 0.0};
+			newRSIObj.data.times = dataObj.times.slice(IDX);
+			if (data.length < periods) {
+				return newRSIObj;
 			}
 			let periodSumGain = 0.0;
 			let periodSumLoss = 0.0;
 			// let tgain = [0.0, 0.0, 0.06, 0.0, 0.72, 0.50, 0.27, 0.33, 0.42, 0.24, 0.0, 0.14, 0.0, 0.67, 0.0, 0.0, 0.03, 0.38, 0.0, 0.0, 0.57, 0.04, 0.0, 0.74, 0.0, 0.0, 0.0, 0.15, 0.04, 0.35, 0.0, 0.0, 0.47]
 			// let tloss = [0.0, 0.25, 0.0, 0.54, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.19, 0.0, 0.42, 0.0, 0.0, 0.28, 0.0, 0.0, 0.19, 0.58, 0.0, 0.0, 0.54, 0.0, 0.67, 0.43, 1.33, 0.0, 0.0, 0.0, 1.15, 0.76, 0.0]
-			for (const [i, n] of dataObj.lasts.entries()) {
-				if (i==0) { continue; }
-				let diff = parseFloat(Math.abs(n - dataObj.lasts[i-1]));
-				let gain = (n > dataObj.lasts[i-1]) ? diff: 0.0;
-				let loss = (n < dataObj.lasts[i-1]) ? diff: 0.0;
+			for (const [i, n] of data.entries()) {
+				let diff = parseFloat(Math.abs(n - data[i-1]));
+				let gain = (n > data[i-1]) ? diff: 0.0;
+				let loss = (n < data[i-1]) ? diff: 0.0;
 				// let gain = (tgain[i] > 0.0) ? tgain[i] : 0.0;
 				// let loss = (tloss[i] > 0.0) ? tloss[i] : 0.0;
 				if (i < periods) {
 					periodSumGain += gain;
 					periodSumLoss += loss;
-					RSIObj.data.push(50);
+					newRSIObj.data.RSI.push(50);
 				} else if (i == periods) {
-					RSIObj.previousAvgGain = periodSumGain / RSIObj.periods;
-					RSIObj.previousAvgLoss = periodSumLoss / RSIObj.periods;
+					newRSIObj.previousAvgGain = periodSumGain / newRSIObj.periods;
+					newRSIObj.previousAvgLoss = periodSumLoss / newRSIObj.periods;
 					let rsi = 100.0;
-					if (RSIObj.previousAvgLoss > 0.0) {
-						let rs = parseFloat(RSIObj.previousAvgGain / RSIObj.previousAvgLoss)
+					if (newRSIObj.previousAvgLoss > 0.0) {
+						let rs = parseFloat(newRSIObj.previousAvgGain / newRSIObj.previousAvgLoss)
 						rsi = parseFloat(100 - (100 / (1 + rs)).toFixed(4));
 					}
-					RSIObj.data.push(rsi)
+					newRSIObj.data.RSI.push(rsi)
 				} else {
-					addToRSI(gain, loss)
+					newRSIObj = addToRSI(newRSIObj, gain, loss)
 					// let avgGain = ( (RSIObj.previousAvgGain * (RSIObj.periods-1)) + gain ) / RSIObj.periods;
 					// let avgLoss = ( (RSIObj.previousAvgLoss * (RSIObj.periods-1)) + loss ) / RSIObj.periods;
 					// let rsi = 100.0;
@@ -115,10 +117,10 @@
 				// }
 			}
 			// PERIOD=14; RSI = 100 - (100/(1+RS));  RS = avg.gain / avg.loss
-			return RSIObj;
+			return newRSIObj;
 		}
 
-		function addToRSI(gain, loss) {
+		function addToRSI(RSIObj, gain, loss) {
 			let avgGain = ( (RSIObj.previousAvgGain * (RSIObj.periods-1)) + gain ) / RSIObj.periods;
 			let avgLoss = ( (RSIObj.previousAvgLoss * (RSIObj.periods-1)) + loss ) / RSIObj.periods;
 			let rsi = 100.0;
@@ -126,9 +128,24 @@
 				let rs = parseFloat(RSIObj.previousAvgGain / RSIObj.previousAvgLoss)
 				rsi = parseFloat(100 - (100 / (1 + rs)).toFixed(4));
 			}
-			RSIObj.data.push(rsi);
+			RSIObj.data.RSI.push(rsi);
 			RSIObj.previousAvgGain = avgGain;
 			RSIObj.previousAvgLoss = avgLoss;
+			return RSIObj;
+		}
+
+		function getExponentialSmoothing(data) {
+			let forcastArr = [0];
+			const alpha = 0.2;
+			for (const [i, n] of data.entries()) {
+				if (i == 0) { continue; }
+				if (i == 1) {
+					forcastArr.push (data[i-1] );
+				} else {
+					forcastArr.push( alpha*data[i-1] + (1 - alpha)*forcastArr[i-1] );
+				}
+			}
+			return forcastArr;
 		}
 
 		function getChartData(tbal) {
@@ -181,12 +198,6 @@
 			animation: {
 				duration: 0
 			},
-			plugins: {
-				title: {
-					display: true,
-					text: ticker
-				}
-			},
 			scales: {
 				y: {
 					type: 'linear',
@@ -204,6 +215,10 @@
 				},
 			},
 			plugins: {
+				// title: {
+				// 	display: true,
+				// 	text: ticker
+				// },
 				zoom: {
 					pan: {
 						enabled: false,
@@ -217,13 +232,13 @@
 							enabled: false
 						},
 						drag: {
-							enabled: true
+							enabled: false
 						},
 						mode: 'xy',
 					},
 				},
 				tooltip: {
-					enabled: true
+					enabled: false
 				},
 			},
             elements:{
@@ -260,7 +275,7 @@
 
 		// Chart.defaults.global.showTooltips = false;
 		const ctx = document.getElementById('{{ticker}}');
-		let stockChart = new Chart(ctx, getChartConfig('line', getChartData(dataObj), chartOptions));
+		let stockChart = new Chart(ctx, getChartConfig('line', getChartData(dataObj), chartOptions, []));
 
 		const getNewTickerData = async (url) => {
 			const response = await fetch(url, {
@@ -307,12 +322,12 @@
 				$('#low').text().replace(newData[ticker].low)
 				$('#high').text().replace(newData[ticker].high)
 				stockChart.destroy();
-				stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions));
+				stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
 
 				// RSI data and chart
-				calculateRSI(RSIObj.periods);
+				RSIObj = calculateRSI(RSIObj.periods, data.lasts);
 				rsiChart.destroy();
-				rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(), RSIChartOptions));
+				rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIObj.data), RSIChartOptions, [horizontalLine]));
 			}
 		}
 
@@ -355,11 +370,16 @@
 				data = getDataFromIndex(IDX);
 				stockChart.destroy();
 				stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
+
+				rsiData = RSIObj.data.rsi.slice(IDX);
+				// RSIObj = calculateRSI(RSIObj.periods, dataObj.lasts.slice(IDX));
+				rsiChart.destroy();
+				rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIObj.data), RSIChartOptions, [horizontalLine]));
 			}
 		}
 
 
-		const plugin = {
+		const customCanvasBackgroundColor = {
 			id: 'customCanvasBackgroundColor',
 			beforeDraw: (chart, args, options) => {
 				const {ctx} = chart;
@@ -390,7 +410,7 @@
 			},
             elements:{
                 point:{
-                    borderWidth: 0,
+                    borderWidth: 1,
                     radius: 1,
                 },
 				line: {
@@ -399,22 +419,41 @@
             },
 		};
 
-		calculateRSI(RSIObj.periods);
-		const getRSIChartData = () => {
-			let overbought = [...new Array(RSIObj.data.length)].map(()=>70);
-			let oversold = [...new Array(RSIObj.data.length)].map(()=>30);
+		RSIObj = calculateRSI(RSIObj.periods, dataObj.lasts);
+		const getRSIChartData = (data) => {
+			let overbought = [...new Array(data.times.length)].map(()=>70);
+			let oversold = [...new Array(data.times.length)].map(()=>30);
 			let rsiChartData = {
-				labels: dataObj.times,
+				labels: dataObj.times.slice(IDX),
 				datasets: [
-					{label: 'rsi', data: RSIObj.data, borderWidth: 1,},
-					{label: 'overbought', data: overbought, borderWidth: 1,},
-					{label: 'oversold', data: oversold, borderWidth: 1,},
-				],
+					{label: 'rsi', data: data.RSI, borderWidth: 1, borderColor: '#ded3bf'},
+					//{label: 'overbought', data: overbought, borderWidth: 1, borderColor: 'green'},
+					//{label: 'oversold', data: oversold, borderWidth: 1, borderColor: 'red'},
+					{label: 'ExpSm', data: getExponentialSmoothing(data.RSI), borderWidth: 1, borderColor: '#b59f02'},
+				]
 			}
 			return rsiChartData;
 		}
 
-		rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(), RSIChartOptions));
+
+		const horizontalLine = {
+			id: 'horizontalLine',
+			beforeDatasetsDraw: ( chart, args, options ) => {
+				const { ctx, chartArea: {top, right, bottom, left, width, height}, scales: {x, y} } = chart;
+				ctx.save();
+				// draw line
+				ctx.strokeStyle = 'green';
+				//ctx.setLineDash([50, 50]);
+				ctx.strokeRect(left, y.getPixelForValue(30), width, 0);
+				
+				ctx.strokeStyle = 'red';
+				ctx.strokeRect(left, y.getPixelForValue(70), width, 0);
+
+				ctx.restore();
+			},
+		};
+
+		rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIObj.data), RSIChartOptions, [horizontalLine]));
 
 	</script>
 </html>
