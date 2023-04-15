@@ -122,13 +122,13 @@
 			return [RSIarr, previousAvgGain, previousAvgLoss];
 		}
 
+		const EXPSMTH_ALPHA = 0.2;
 		function getExponentialSmoothing(data = [], ntimes = 1) {
 			if (data.length == 0 || ntimes <= 0) return data;
 			let forcastArr = [0];
-			const alpha = 0.2;
 			for (const [i, n] of data.entries()) {
 				if (i == 0) { continue; }
-				val = (i==1) ? data[i-1] : alpha*data[i-1] + (1 - alpha)*forcastArr[i-1];
+				val = (i==1) ? data[i-1] : EXPSMTH_ALPHA*data[i-1] + (1 - EXPSMTH_ALPHA)*forcastArr[i-1];
 				forcastArr.push(val);
 			}
 			return getExponentialSmoothing(forcastArr, --ntimes);
@@ -308,12 +308,12 @@
 			if (dataObj.times.length == 0) {
 				return;
 			}
-			end = dataObj.times[dataObj.times.length - 1];
-			begin = end.split(':');
+			let end = dataObj.times[dataObj.times.length - 1];
+			let begin = end.split(':');
 			begin[2] = parseInt(begin[2]) + 1;  // want 1 second more
 			
-			url = ticker + '?from_time=' + begin.join(':');
-			newData = await getNewTickerData(url);
+			let url = ticker + '?from_time=' + begin.join(':');
+			let newData = await getNewTickerData(url);
 
 			if (newData[ticker].times.length > 0) {
 				// ticker price data and chart
@@ -321,7 +321,7 @@
 				dataObj.bids.push(...newData[ticker].bids);
 				dataObj.asks.push(...newData[ticker].asks);
 				dataObj.lasts.push(...newData[ticker].lasts);
-				priceData = getDataFromIndex(IDX);
+				let priceData = getDataFromIndex(IDX);
 				stockChart.data = getChartData(priceData);
 				stockChart.update();
 				$('#low').text().replace(newData[ticker].low)
@@ -330,7 +330,7 @@
 				// stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
 
 				// RSI data and chart
-				RSIarr = calculateRSI(RSI_PERIODS, priceData.lasts.slice(IDX));
+				let RSIarr = calculateRSI(RSI_PERIODS, priceData.lasts.slice(IDX));
 				rsiChart.data = getRSIChartData(RSIarr);
 				rsiChart.update();
 				//rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [horizontalLine]));
@@ -352,8 +352,8 @@
 
 
 		function showChartMinsBack(minsBack) {
-			last = dataObj.times[dataObj.times.length - 1];
-			hms = last.split(':');
+			let last = dataObj.times[dataObj.times.length - 1];
+			let hms = last.split(':');
 			let hrs = parseInt(hms[0])
 			let mins = parseInt(hms[1]);
 			let secs = parseInt(hms[2]);
@@ -365,7 +365,7 @@
 			}
 
 			if (minsBack > 0) {
-				backAsSeconds = (hrs*60 + mins - minsBack)*60 + secs;
+				let backAsSeconds = (hrs*60 + mins - minsBack)*60 + secs;
 				for (const [i, value] of dataObj.times.entries()) {
 					let time = value.split(':');
 					let asSecs = parseInt(time[0])*3600 + parseInt(time[1]*60) + parseInt(time[2]);
@@ -376,20 +376,24 @@
 				}
 			}
 			if (IDX !== oldIDX) {
-				data = getDataFromIndex(IDX);
-				stockChart.destroy();
-				stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
+				let priceData = getDataFromIndex(IDX);
+				stockChart.data = getChartData(priceData);
+				stockChart.update();
+				// stockChart.destroy();
+				//stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
 
-				RSIarr = calculateRSI(RSI_PERIODS, dataObj.lasts.slice(IDX));
-				rsiChart.destroy();
-				rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [CHART_PLUGINS[1]]));
+				let RSIarr = calculateRSI(RSI_PERIODS, dataObj.lasts.slice(IDX));
+				rsiChart.data = getRSIChartData(RSIarr);
+				rsiChart.update();
+				// rsiChart.destroy();
+				// rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [CHART_PLUGINS[1]]));
 			}
 		}
 
 		function updateBidAskLastLegendPrices(bid, ask, last) {
 			stockChart.data.datasets.forEach (
 				(obj, i) => {
-					label = obj.label.split(':')[0];
+					let label = obj.label.split(':')[0];
 					if ( label == 'Bid') {
 						obj.label = 'Bid: ' + bid;
 					} else if ( label == 'Ask' ) {
