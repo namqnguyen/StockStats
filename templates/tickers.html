@@ -24,8 +24,8 @@
 				<button type="button" id="range_button" onclick="doFilter()">Select</button>
 				| <input type="text" id="skipInterval" value="" size="2" /> <button id="resetInterval">res</button>
 				<span id="timesContainer"></span>
-				| <span id="low" style="color:red">{{data[ticker]['low']}}</span>
-				| <span id="high" style="color: green">{{data[ticker]['high']}}</span>
+				| <span id="low" style="color:red">Low: {{data[ticker]['low']}}</span>
+				| <span id="high" style="color: green">High: {{data[ticker]['high']}}</span>
 			</h2>
 			<canvas id="{{ticker}}"></canvas>
 			<canvas id="RSIchart"></canvas>
@@ -70,9 +70,8 @@
 			lasts: {{data[ticker]['lasts']}},
 		};
 
-		function calculateRSI(periods = RSIPERIODS, data = [], ntimes = 1) {
+		function calculateRSI(periods = RSI_PERIODS, data = []) {
 			if (data.length < periods) return [];
-			if (ntimes <= 0) return data;
 			let RSIarr = [];
 			let periodSumGain = 0.0;
 			let periodSumLoss = 0.0;
@@ -101,23 +100,12 @@
 					RSIarr.push(rsi)
 				} else {
 					[RSIarr, previousAvgGain, previousAvgLoss] = addToRSI(RSIarr, previousAvgGain, previousAvgLoss, gain, loss, periods)
-					// let avgGain = ( (RSIObj.previousAvgGain * (RSIObj.periods-1)) + gain ) / RSIObj.periods;
-					// let avgLoss = ( (RSIObj.previousAvgLoss * (RSIObj.periods-1)) + loss ) / RSIObj.periods;
-					// let rsi = 100.0;
-					// if (avgLoss > 0.0) {
-					// 	let rs = parseFloat(RSIObj.previousAvgGain / RSIObj.previousAvgLoss)
-					// 	rsi = parseFloat(100 - (100 / (1 + rs)).toFixed(4));
-					// }
-					// RSIObj.data.push(rsi);
-					// RSIObj.previousAvgGain = avgGain;
-					// RSIObj.previousAvgLoss = avgLoss;
 				}
 				// if (i == tgain.length) {
 				// 	break;
 				// }
 			}
-			// PERIOD=14; RSI = 100 - (100/(1+RS));  RS = avg.gain / avg.loss
-			return calculateRSI(RSIPERIODS, RSIarr, --ntimes);
+			return RSIarr;
 		}
 
 		function addToRSI(RSIarr, previousAvgGain, previousAvgLoss, gain, loss, periods) {
@@ -134,19 +122,16 @@
 			return [RSIarr, previousAvgGain, previousAvgLoss];
 		}
 
-		function getExponentialSmoothing(data = []) {
-			if (data.length == 0) return data;
+		function getExponentialSmoothing(data = [], ntimes = 1) {
+			if (data.length == 0 || ntimes <= 0) return data;
 			let forcastArr = [0];
 			const alpha = 0.2;
 			for (const [i, n] of data.entries()) {
 				if (i == 0) { continue; }
-				if (i == 1) {
-					forcastArr.push (data[i-1] );
-				} else {
-					forcastArr.push( alpha*data[i-1] + (1 - alpha)*forcastArr[i-1] );
-				}
+				val = (i==1) ? data[i-1] : alpha*data[i-1] + (1 - alpha)*forcastArr[i-1];
+				forcastArr.push(val);
 			}
-			return forcastArr;
+			return getExponentialSmoothing(forcastArr, --ntimes);
 		}
 
 		function getChartData(tbal) {
@@ -168,24 +153,28 @@
 				labels: data.times,
 				datasets: [
 					{
-						label: 'bid',
+						label: 'Bid: ' + data.bids[data.bids.length-1].toFixed(2),
 						data: data.bids,
 						borderWidth: 1,
-						borderColor: "green",
+						borderColor: 'green',
+						backgroundColor: 'green',
 					},
 					{
-						label: 'ask',
+						label: 'Ask: ' + data.asks[data.asks.length-1].toFixed(2),
 						data: data.asks,
 						borderWidth: 1,
-						borderColor: "red",
+						borderColor: 'red',
+						backgroundColor: 'red',
 					},
 					{
-						label: 'last',
+						label: 'Last: ' + data.lasts[data.lasts.length-1].toFixed(2),
 						data: data.lasts,
 						borderWidth: 1,
-						borderColor: "#FFC300",
+						borderColor: '#FFC300',
+						backgroundColor: '#FFC300',
 					},
 				],
+				text: 'blahblahblah'
 			};
 		}
 
@@ -238,7 +227,21 @@
 					},
 				},
 				tooltip: {
-					enabled: false
+					enabled: false,
+				},
+				legend: {
+					display: true,
+					align: 'end',
+					labels: {
+						color: '#FFFFFF',
+						font: {
+							size: 20,
+						},
+					},
+					onHover: (evt, item, legend) => {
+						console.log('onhover');
+						//document.getElementById("WAL").style.cursor = 'pointer';
+        			},
 				},
 			},
             elements:{
@@ -314,28 +317,34 @@
 
 			if (newData[ticker].times.length > 0) {
 				// ticker price data and chart
-				dataObj.times = dataObj.times.concat(newData[ticker].times)
-				dataObj.bids = dataObj.bids.concat(newData[ticker].bids);
-				dataObj.asks = dataObj.asks.concat(newData[ticker].asks);
-				dataObj.lasts = dataObj.lasts.concat(newData[ticker].lasts);
-				data = getDataFromIndex(IDX);
+				dataObj.times.push(...newData[ticker].times)
+				dataObj.bids.push(...newData[ticker].bids);
+				dataObj.asks.push(...newData[ticker].asks);
+				dataObj.lasts.push(...newData[ticker].lasts);
+				priceData = getDataFromIndex(IDX);
+				stockChart.data = getChartData(priceData);
+				stockChart.update();
 				$('#low').text().replace(newData[ticker].low)
 				$('#high').text().replace(newData[ticker].high)
-				stockChart.destroy();
-				stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
+				// stockChart.destroy();
+				// stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
 
 				// RSI data and chart
-				RSIarr = calculateRSI(RSIPERIODS, data.lasts.slice(IDX));
-				rsiChart.destroy();
-				rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [horizontalLine]));
+				RSIarr = calculateRSI(RSI_PERIODS, priceData.lasts.slice(IDX));
+				rsiChart.data = getRSIChartData(RSIarr);
+				rsiChart.update();
+				//rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [horizontalLine]));
 			}
 		}
 
 		let IDX = 0;
 		let I = 1;
+		let P = 1;
 		function runUpdateInterval() {
 			setTimeout(runUpdateInterval, I*1000);
-			updateChartsWithNewData();
+			if (P == 0) {
+				updateChartsWithNewData();
+			}
 		}
 
 		runUpdateInterval();
@@ -348,7 +357,7 @@
 			let hrs = parseInt(hms[0])
 			let mins = parseInt(hms[1]);
 			let secs = parseInt(hms[2]);
-			let openSince = 9*60 + 30;   // Open time, 9:30 AM
+			let openSince = 9*60 + 30;   // Open time, 9:30 AM Eastern
 			const oldIDX = IDX;
 
 			if ( minsBack === 0 && hrs*60 + mins >= openSince) {
@@ -371,24 +380,75 @@
 				stockChart.destroy();
 				stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
 
-				RSIarr = calculateRSI(RSIPERIODS, dataObj.lasts.slice(IDX));
+				RSIarr = calculateRSI(RSI_PERIODS, dataObj.lasts.slice(IDX));
 				rsiChart.destroy();
-				rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [horizontalLine]));
+				rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [CHART_PLUGINS[1]]));
 			}
 		}
 
+		function updateBidAskLastLegendPrices(bid, ask, last) {
+			stockChart.data.datasets.forEach (
+				(obj, i) => {
+					label = obj.label.split(':')[0];
+					if ( label == 'Bid') {
+						obj.label = 'Bid: ' + bid;
+					} else if ( label == 'Ask' ) {
+						obj.label = 'Ask: ' + ask;
+					} else if ( label == 'Last' ) {
+						obj.label = 'Last: ' + last;
+					}
+				}
+			);
+			stockChart.update();
+		}	
 
-		const customCanvasBackgroundColor = {
-			id: 'customCanvasBackgroundColor',
-			beforeDraw: (chart, args, options) => {
-				const {ctx} = chart;
-				ctx.save();
-				ctx.globalCompositeOperation = 'destination-over';
-				ctx.fillStyle = options.color || '#99ffff';
-				ctx.fillRect(30, 30, chart.width-50, chart.height-700);
-				ctx.restore();
-			}
-		};
+		const CHART_PLUGINS = [
+			{
+				id: 'customCanvasBackgroundColor',
+				beforeDraw: (chart, args, options) => {
+					return;
+					const {ctx} = chart;
+					ctx.save();
+					ctx.globalCompositeOperation = 'destination-over';
+					ctx.fillStyle = options.color || '#99ffff';
+					ctx.fillRect(30, 30, chart.width-50, chart.height-700);
+					ctx.restore();
+				},
+			},
+			{
+				id: 'overSoldOverBoughtLines',
+				beforeDatasetsDraw: ( chart, args, options ) => {
+					const { ctx, chartArea: {top, right, bottom, left, width, height}, scales: {x, y} } = chart;
+					ctx.save();
+					// draw line
+					ctx.strokeStyle = 'green';
+					//ctx.setLineDash([50, 50]);
+					ctx.strokeRect(left, y.getPixelForValue(30), width, 1);
+					
+					ctx.strokeStyle = 'red';
+					ctx.strokeRect(left, y.getPixelForValue(70), width, 1);
+
+					ctx.restore();
+				},
+			},
+			// {
+			// 	id: 'overlayText',
+			// 	afterDraw: (chart, args, options) => {
+			// 		console.log('afterdarw');
+			// 		const { ctx, chartArea: {top, right, bottom, left, width, height}, scales: {x, y} } = chart;
+			// 		let maxValue = Math.max(...chart.data.datasets[0].data);
+			// 		let minValue = Math.min(...chart.data.datasets[0].data);
+			// 		ctx.save();
+			// 		ctx.textAlign = 'center';
+			// 		ctx.font = '12px Arial';
+			// 		ctx.fillStyle = 'white';
+			// 		ctx.textAlign = 'left';
+			// 		ctx.fillText('Dagens temperatur = ' + maxValue + ' : ', 5, 5);
+			// 		ctx.fillText('Dagens laveste temperatur = ' + minValue + ' : ', 50, 50);
+			// 		ctx.restore();
+			// 	},
+			// },
+		];
 
 		let RSIChartOptions = {
 			responsive: true,
@@ -418,7 +478,21 @@
 			},
 			plugins: {
 				tooltip: {
-					enabled: false
+					enabled: false,
+				},
+				legend: {
+					display: true,
+					align: 'end',
+					labels: {
+						color: '#FFFFFF',
+						font: {
+							size: 20,
+						},
+					},
+					onHover: (evt, item, legend) => {
+						console.log('onhover');
+						//document.getElementById("WAL").style.cursor = 'pointer';
+        			},
 				},
 			},
             elements:{
@@ -432,16 +506,30 @@
             },
 		};
 
-		const RSIPERIODS = 14;
-		const getRSIChartData = (data) => {
+		const RSI_PERIODS = 14;
+		const EXPSMTH_TIMES = 3;
+		const getRSIChartData = (RSIdata) => {
 			try {
+				let expSmthData = getExponentialSmoothing(RSIdata, EXPSMTH_TIMES);
 				let rsiChartData = {
 					labels: dataObj.times.slice(IDX),
 					datasets: [
-						{label: 'rsi', data: data, borderWidth: 1, borderColor: '#706247'},
+						{
+							label: 'RSI: ' + RSIdata[RSIdata.length - 1].toFixed(1),
+							data: RSIdata,
+							borderWidth: 1,
+							borderColor: '#706247',
+							backgroundColor: '#706247',
+						},
 						//{label: 'overbought', data: overbought, borderWidth: 1, borderColor: 'green'},
 						//{label: 'oversold', data: oversold, borderWidth: 1, borderColor: 'red'},
-						{label: 'ExpSm', data: getExponentialSmoothing(data), borderWidth: 1, borderColor: '#FFC300'},
+						{
+							label: EXPSMTH_TIMES + 'x.Exp.Smoothing: ' + expSmthData[expSmthData.length -1].toFixed(1),
+							data: expSmthData,
+							borderWidth: 1,
+							borderColor: '#FFC300',
+							backgroundColor: '#FFC300',
+						},
 					]
 				}
 				return rsiChartData;
@@ -450,26 +538,8 @@
 			}
 		}
 
-		const horizontalLine = {
-			id: 'horizontalLine',
-			beforeDatasetsDraw: ( chart, args, options ) => {
-				const { ctx, chartArea: {top, right, bottom, left, width, height}, scales: {x, y} } = chart;
-				ctx.save();
-				// draw line
-				ctx.strokeStyle = 'green';
-				//ctx.setLineDash([50, 50]);
-				ctx.strokeRect(left, y.getPixelForValue(30), width, 1);
-				
-				ctx.strokeStyle = 'red';
-				ctx.strokeRect(left, y.getPixelForValue(70), width, 1);
-
-				ctx.restore();
-			},
-		};
-
-
-		RSIarr = calculateRSI(RSIPERIODS, dataObj.lasts)
-		rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [horizontalLine]));
+		RSIarr = calculateRSI(RSI_PERIODS, dataObj.lasts)
+		rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, CHART_PLUGINS));
 
 	</script>
 </html>
