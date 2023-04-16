@@ -1,5 +1,5 @@
 const RSI_PERIODS = 14;
-const EXPSMTH_TIMES = 1;
+const EXPSMTH_TIMES = 2;
 const EXPSMTH_ALPHA = 0.2;
 
 
@@ -94,6 +94,15 @@ let RSIChartOptions = {
 				color: '#C0C0C0',
 			},
 		},
+		y_volume: {
+			beginAtZero: true,
+			min: 0,
+			position: 'right',
+			ticks: {
+				padding: -200,
+				//labelOffset: -100,
+			},
+		}
 	},
 	plugins: {
 		tooltip: {
@@ -132,13 +141,15 @@ const getRSIChartData = (RSIdata) => {
 		let rsiChartData = {
 			labels: dataObj.times.slice(IDX),
 			datasets: [
-				// {
-				// 	label: 'Volume',
-				// 	data: dataObj.volumes,
-				// 	borderWidth: 1,
-				// 	borderColor: '#FFFFFF',
-				// 	backgroundColor: '#FFFFFF',
-				// },
+				{
+					label: 'Volume: ' + dataObj.volumes[dataObj.volumes.length - 1],
+					type: 'bar',
+					data: dataObj.volumes,
+					borderWidth: 5,
+					borderColor: '#00ffff',
+					backgroundColor: '#00ffff',
+					yAxisID: 'y_volume',
+				},
 				{
 					label: 'RSI: ' + RSIdata[RSIdata.length - 1].toFixed(1),
 					data: RSIdata,
