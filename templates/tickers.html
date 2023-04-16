@@ -18,9 +18,9 @@
 		<div class="chart-wrapper">
 			<h2 id="timesheader" style="background-color: white;">
 				<span id="ticker">{{ticker}}</span>
-				<input type="text" id="date" value="{{date}}" size="7" />
-				<input type="text" id="from_time" value="{{from_time}}" size="3" />
-				<input type="text" id="to_time" value="{{to_time}}" size="3" />
+				<input type="text" id="date" value="{{date if date}}" size="7" />
+				<input type="text" id="from_time" value="{{from_time if from_time}}" size="3" />
+				<input type="text" id="to_time" value="{{to_time if to_time}}" size="3" />
 				<button type="button" id="range_button" onclick="doFilter()">Select</button>
 				| <input type="text" id="skipInterval" value="" size="2" /> <button id="resetInterval">res</button>
 				<span id="timesContainer"></span>
@@ -33,7 +33,7 @@
 	</body>
 
 	<script>
-		const ticker = 'WAL';
+		const ticker = '{{ticker}}';
 		let DATAINTERVAL = 1;
 
 		let dataObj = {
@@ -41,6 +41,7 @@
 			bids: {{data[ticker]['bids']}},
 			asks: {{data[ticker]['asks']}},
 			lasts: {{data[ticker]['lasts']}},
+			volumes: {{data[ticker]['volumes']}},
 		};
 
 		const exists = (what) => {
@@ -51,7 +52,6 @@
 				return false;
 			}
 		}
-
 	</script>
 	<script src="/assets/js/chart_common.js"></script>
 	<script src="/assets/js/price_chart.js"></script>

@@ -58,8 +58,8 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list
 	data = {}
 	for ticker in tickers:
 		# docs = await mongo_db[ticker].find(conditions).to_list(length=5000)
-		docs = await mongo_db[ticker].find(conditions, {'datetime': 1, 'content.items': {'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1}}).to_list(length=50000)
-		data[ticker] = {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'low': 0, 'high': 0}
+		docs = await mongo_db[ticker].find(conditions, {'datetime': 1, 'content.items': {'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1, 'volume': 1}}).to_list(length=50000)
+		data[ticker] = {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0}
 		for doc in docs:
 			items = doc['content']['items']
 			if len(items) == 0:
@@ -74,6 +74,7 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list
 			data[ticker]['bids'].append(float(item['bid']))
 			data[ticker]['asks'].append(float(item['ask']))
 			data[ticker]['lasts'].append(float(item['last']))
+			data[ticker]['volumes'].append(float(item['volume']))
 			try:
 				data[ticker]['low'] = float(item['low'])
 				data[ticker]['high'] = float(item['high'])

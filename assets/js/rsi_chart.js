@@ -1,5 +1,5 @@
 const RSI_PERIODS = 14;
-const EXPSMTH_TIMES = 3;
+const EXPSMTH_TIMES = 1;
 const EXPSMTH_ALPHA = 0.2;
 
 
@@ -132,6 +132,13 @@ const getRSIChartData = (RSIdata) => {
 		let rsiChartData = {
 			labels: dataObj.times.slice(IDX),
 			datasets: [
+				// {
+				// 	label: 'Volume',
+				// 	data: dataObj.volumes,
+				// 	borderWidth: 1,
+				// 	borderColor: '#FFFFFF',
+				// 	backgroundColor: '#FFFFFF',
+				// },
 				{
 					label: 'RSI: ' + RSIdata[RSIdata.length - 1].toFixed(1),
 					data: RSIdata,
