@@ -137,6 +137,9 @@ let RSIChartOptions = {
 
 const getRSIChartData = (RSIdata) => {
 	try {
+		if (!exists(RSIdata) || RSIdata.length === 0) {
+			return [];
+		}
 		let expSmthData = getExponentialSmoothing(RSIdata, EXPSMTH_TIMES);
 		let rsiChartData = {
 			labels: dataObj.times.slice(IDX),
@@ -171,6 +174,7 @@ const getRSIChartData = (RSIdata) => {
 		return rsiChartData;
 	} catch (e) {
 		console.log(e);
+		return [];
 	}
 }
 

@@ -25,7 +25,7 @@ function getDataFromIndex(idx) {
 }
 
 function getChartData(tbal) {
-	if ( !exists(tbal) ) {
+	if ( !exists(tbal) || tbal.times.length === 0) {
 		return {};
 	}
 	let data = tbal;
