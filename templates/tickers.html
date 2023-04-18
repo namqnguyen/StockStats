@@ -26,6 +26,7 @@
 				<span id="timesContainer"></span>
 				| <span id="low" style="color:red">Low: {{data[ticker]['low']}}</span>
 				| <span id="high" style="color: green">High: {{data[ticker]['high']}}</span>
+				| <button id="streamSwitch">Stream</button>
 			</h2>
 			<canvas id="{{ticker}}"></canvas>
 			<canvas id="RSIchart"></canvas>
@@ -77,13 +78,13 @@
 		$('#skipInterval').keypress( (e) => { if (e.which == 13) { DATAINTERVAL = parseInt(e.target.value) } } );
 		$('#resetInterval').click( (e) => { $('#skipInterval').val(1); $('#skipInterval').blur(); } )
 		$('#ticker').click( (e) => { stockChart.resetZoom(); } );
-
+		$('#streamSwitch').click( (e) => { P = !P; } );
 
 		let I = 1;
-		let P = 1;
+		let P = true;
 		function runUpdateInterval() {
 			setTimeout(runUpdateInterval, I*1000);
-			if (P == 0) {
+			if (P) {
 				updateChartsWithNewData();
 			}
 		}

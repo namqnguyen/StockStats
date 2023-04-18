@@ -69,6 +69,17 @@ function calculateVolumeChange(volArr) {
 	return arr;
 }
 
+function getVolumeColor() {
+	let colorArr = [];
+	for (let i = IDX; i < dataObj.lasts.length; i++) {
+		if (dataObj.lasts[i] >= dataObj.lasts[i-1]) {
+			colorArr.push('green');
+		} else {
+			colorArr.push('red');
+		}
+	}
+	return colorArr;
+}
 
 function getExponentialSmoothing(data = [], ntimes = 1) {
 	if (data.length == 0 || ntimes <= 0) return data;
@@ -164,6 +175,7 @@ const getRSIChartData = (RSIdata) => {
 		}
 		let expSmthData = getExponentialSmoothing(RSIdata, EXPSMTH_TIMES);
 		let volData = calculateVolumeChange(dataObj.volumes.slice(IDX));
+		let volColor = getVolumeColor();
 		let rsiChartData = {
 			labels: dataObj.times.slice(IDX),
 			datasets: [
@@ -188,8 +200,9 @@ const getRSIChartData = (RSIdata) => {
 					type: 'bar',
 					data: volData,
 					borderWidth: 5,
-					borderColor: '#00ffff',
-					backgroundColor: '#00ffff',
+					borderColor: volColor, //'#00ffff',
+					backgroundColor: volColor, //'#00ffff',
+					fillColor: volColor,
 					yAxisID: 'y_volume',
 				},
 			]
