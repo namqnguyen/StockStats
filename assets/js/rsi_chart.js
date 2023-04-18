@@ -1,5 +1,5 @@
 const RSI_PERIODS = 14;
-const EXPSMTH_TIMES = 2;
+const EXPSMTH_TIMES = 5;
 const EXPSMTH_ALPHA = 0.2;
 
 
@@ -27,10 +27,10 @@ function calculateRSI(periods = RSI_PERIODS, data = []) {
 			previousAvgLoss = periodSumLoss / periods;
 			let rsi = 100.0;
 			if (previousAvgLoss > 0.0) {
-				let rs = parseFloat(previousAvgGain / previousAvgLoss)
-				rsi = parseFloat(100 - (100 / (1 + rs)).toFixed(4));
+				let rs = parseFloat(previousAvgGain / previousAvgLoss);
+				rsi = parseFloat(100 - (100 / (1 + rs)));
 			}
-			RSIarr.push(rsi)
+			RSIarr.push(rsi);
 		} else {
 			[RSIarr, previousAvgGain, previousAvgLoss] = addToRSI(RSIarr, previousAvgGain, previousAvgLoss, gain, loss, periods)
 		}
@@ -57,12 +57,27 @@ function addToRSI(RSIarr, previousAvgGain, previousAvgLoss, gain, loss, periods)
 }
 
 
+function calculateVolumeChange(volArr) {
+	if (!exists(volArr) || volArr.length == 0) return [];
+	let prev_vol = 0;
+	let arr = [0];
+	for (const [i, n] of volArr.entries()) {
+		if (i == 0) continue;
+		let change = n - volArr[i-1];
+		arr.push(change);
+	}
+	return arr;
+}
+
+
 function getExponentialSmoothing(data = [], ntimes = 1) {
 	if (data.length == 0 || ntimes <= 0) return data;
 	let forcastArr = [0];
+	//console.log(data);
 	for (const [i, n] of data.entries()) {
 		if (i == 0) { continue; }
 		val = (i==1) ? data[i-1] : EXPSMTH_ALPHA*data[i-1] + (1 - EXPSMTH_ALPHA)*forcastArr[i-1];
+		if (isNaN(val)) continue; 
 		forcastArr.push(val);
 	}
 	return getExponentialSmoothing(forcastArr, --ntimes);
@@ -87,16 +102,23 @@ let RSIChartOptions = {
 		y: {
 			type: 'linear',
 			position: 'right',
+			min: 0,
+			max: 100,
 			grid: {
 				color: "#2b2e2d",
 			},
 			ticks: {
 				color: '#C0C0C0',
+				callback: (value, index, values) => {
+					return value + '.0';
+				}
 			},
 		},
 		y_volume: {
+			display: false,
 			beginAtZero: true,
 			min: 0,
+			max: 10000,
 			position: 'right',
 			ticks: {
 				padding: -200,
@@ -117,10 +139,10 @@ let RSIChartOptions = {
 					size: 20,
 				},
 			},
-			onHover: (evt, item, legend) => {
-				console.log('onhover');
-				//document.getElementById("WAL").style.cursor = 'pointer';
-			},
+			// onHover: (evt, item, legend) => {
+			// 	console.log('onhover');
+			// 	//document.getElementById("WAL").style.cursor = 'pointer';
+			// },
 		},
 	},
 	elements:{
@@ -141,18 +163,10 @@ const getRSIChartData = (RSIdata) => {
 			return [];
 		}
 		let expSmthData = getExponentialSmoothing(RSIdata, EXPSMTH_TIMES);
+		let volData = calculateVolumeChange(dataObj.volumes.slice(IDX));
 		let rsiChartData = {
 			labels: dataObj.times.slice(IDX),
 			datasets: [
-				{
-					label: 'Volume: ' + dataObj.volumes[dataObj.volumes.length - 1],
-					type: 'bar',
-					data: dataObj.volumes,
-					borderWidth: 5,
-					borderColor: '#00ffff',
-					backgroundColor: '#00ffff',
-					yAxisID: 'y_volume',
-				},
 				{
 					label: 'RSI: ' + RSIdata[RSIdata.length - 1].toFixed(1),
 					data: RSIdata,
@@ -163,11 +177,20 @@ const getRSIChartData = (RSIdata) => {
 				//{label: 'overbought', data: overbought, borderWidth: 1, borderColor: 'green'},
 				//{label: 'oversold', data: oversold, borderWidth: 1, borderColor: 'red'},
 				{
-					label: EXPSMTH_TIMES + 'x.Exp.Smoothing: ' + expSmthData[expSmthData.length -1].toFixed(1) + '          ',
+					label: EXPSMTH_TIMES + 'x.Exp.Smoothing: ' + expSmthData[expSmthData.length -1].toFixed(1), // + '          ',
 					data: expSmthData,
 					borderWidth: 1,
 					borderColor: '#FFC300',
 					backgroundColor: '#FFC300',
+				},
+				{
+					label: 'Volume: ' + volData[volData.length - 1] + '          ',
+					type: 'bar',
+					data: volData,
+					borderWidth: 5,
+					borderColor: '#00ffff',
+					backgroundColor: '#00ffff',
+					yAxisID: 'y_volume',
 				},
 			]
 		}

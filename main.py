@@ -75,10 +75,7 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list
 			data[ticker]['bids'].append(float(item['bid']))
 			data[ticker]['asks'].append(float(item['ask']))
 			data[ticker]['lasts'].append(float(item['last']))
-			tmp = float(item['volume'])
-			volume = tmp - prev_volume
-			data[ticker]['volumes'].append(volume)
-			prev_volume = tmp
+			data[ticker]['volumes'].append(float(item['volume']))
 			try:
 				data[ticker]['low'] = float(item['low'])
 				data[ticker]['high'] = float(item['high'])

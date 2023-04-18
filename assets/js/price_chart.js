@@ -20,7 +20,8 @@ function getDataFromIndex(idx) {
 		times: dataObj.times.slice(idx),
 		bids: dataObj.bids.slice(idx),
 		asks: dataObj.asks.slice(idx),
-		lasts: dataObj.lasts.slice(idx)
+		lasts: dataObj.lasts.slice(idx),
+		volumes: dataObj.volumes.slice(idx),
 	};
 }
 
@@ -184,6 +185,7 @@ const updateChartsWithNewData = async () => {
 		dataObj.bids.push(...newData[ticker].bids);
 		dataObj.asks.push(...newData[ticker].asks);
 		dataObj.lasts.push(...newData[ticker].lasts);
+		dataObj.volumes.push(...newData[ticker].volumes);
 		let priceData = getDataFromIndex(IDX);
 		stockChart.data = getChartData(priceData);
 		stockChart.update();
@@ -193,7 +195,7 @@ const updateChartsWithNewData = async () => {
 		// stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
 
 		// RSI data and chart
-		let RSIarr = calculateRSI(RSI_PERIODS, priceData.lasts.slice(IDX));
+		let RSIarr = calculateRSI(RSI_PERIODS, priceData.lasts);
 		rsiChart.data = getRSIChartData(RSIarr);
 		rsiChart.update();
 		//rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [horizontalLine]));
