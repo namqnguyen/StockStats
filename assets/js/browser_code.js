@@ -81,6 +81,17 @@ function getProps() {
 }
 
 
+const runAtSpecificTimeOfDay = (hour, minutes, func) => {
+  const twentyFourHours = 86400000;
+  const now = new Date();
+  let eta_ms = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minutes, 0, 0).getTime() - now;
+  if (eta_ms < 0) {
+    eta_ms += twentyFourHours;
+  }
+  setTimeout( func, eta_ms );
+}
+
+
 function run() {
   setTimeout(run, S*1000);
   if (P !== 1) {
@@ -91,13 +102,10 @@ function run() {
 const TICKERS = ['WAL'];
 const KEEP_ALIVE_INTERVAL = 180*1000
 // let KA = setInterval(keepAlive, KEEP_ALIVE_INTERVAL);
-let S = 1;
+let S = 10;
 let P = 0;
 setTimeout(run, 100);
 
-
-const injectJS = (srcURL) => {
-  var script = document.createElement("script");
-  script.src = 'http://127.0.0.1:5000/assets/js/browser_code.js';
-  getTickerWindow.document.head.appendChild(script);
+if (S>1) {
+  runAtSpecificTimeOfDay( 8, 29, ()=>{S=1} );
 }

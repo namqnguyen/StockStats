@@ -72,10 +72,12 @@ function calculateVolumeChange(volArr) {
 function getVolumeColor() {
 	let colorArr = [];
 	for (let i = IDX; i < dataObj.lasts.length; i++) {
-		if (dataObj.lasts[i] >= dataObj.lasts[i-1]) {
+		if (dataObj.lasts[i] > dataObj.lasts[i-1]) {
 			colorArr.push('green');
-		} else {
+		} else if (dataObj.lasts[i] < dataObj.lasts[i-1]) {
 			colorArr.push('red');
+		} else {
+			colorArr.push('grey');
 		}
 	}
 	return colorArr;
