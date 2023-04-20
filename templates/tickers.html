@@ -80,11 +80,11 @@
 		$('#ticker').click( (e) => { stockChart.resetZoom(); } );
 		$('#streamSwitch').click( (e) => { P = !P; } );
 
-		let I = 1;
-		let P = true;
+		let I = 1;  // refresh interval
+		let P = false;  // pause
 		function runUpdateInterval() {
 			setTimeout(runUpdateInterval, I*1000);
-			if (P) {
+			if (!P) {
 				updateChartsWithNewData();
 			}
 		}

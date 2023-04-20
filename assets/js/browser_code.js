@@ -107,5 +107,5 @@ let P = 0;
 setTimeout(run, 100);
 
 if (S>1) {
-  runAtSpecificTimeOfDay( 8, 29, ()=>{S=1} );
+  runAtSpecificTimeOfDay( 8, 25, ()=>{S=1} );
 }
