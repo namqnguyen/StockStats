@@ -12,6 +12,12 @@
 			}
 
 		</script>
+		<style>
+			.customChartLegendCSSClass {
+				display: inline-block;
+				background-color: aqua;
+			}
+		</style>
 	</head>
 
 	<body style="background-color:black;">
@@ -26,9 +32,14 @@
 				<span id="timesContainer"></span>
 				| <span id="low" style="color:red">Low: {{data[ticker]['low']}}</span>
 				| <span id="high" style="color: green">High: {{data[ticker]['high']}}</span>
-				| <button id="streamSwitch">Stream</button>
+				| <button id="streamSwitch">Stream OFF</button>
 			</h2>
 			<canvas id="{{ticker}}"></canvas>
+
+			<!-- RSI Chart -->
+			<div>
+				<span id="RSIchartLegend" style="float: right;"></span>
+			</div>
 			<canvas id="RSIchart"></canvas>
 		</div>
 	</body>
@@ -78,7 +89,10 @@
 		$('#skipInterval').keypress( (e) => { if (e.which == 13) { DATAINTERVAL = parseInt(e.target.value) } } );
 		$('#resetInterval').click( (e) => { $('#skipInterval').val(1); $('#skipInterval').blur(); } )
 		$('#ticker').click( (e) => { stockChart.resetZoom(); } );
-		$('#streamSwitch').click( (e) => { P = !P; } );
+		$('#streamSwitch').click( (e) => {
+			P ? $('#streamSwitch').html('Stream OFF') : $('#streamSwitch').html('Stream ON');
+			P = !P;
+		 });
 
 		let I = 1;  // refresh interval
 		let P = false;  // pause

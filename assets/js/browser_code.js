@@ -106,6 +106,9 @@ let S = 10;
 let P = 0;
 setTimeout(run, 100);
 
+// Set time to auto set interval
 if (S>1) {
   runAtSpecificTimeOfDay( 8, 25, ()=>{S=1} );
+} else {
+  runAtSpecificTimeOfDay( 3, 01, ()=>{S=10} );
 }

@@ -1,5 +1,5 @@
 const RSI_PERIODS = 14;
-const EXPSMTH_TIMES = 5;
+const EXPSMTH_TIMES = 3;
 const EXPSMTH_ALPHA = 0.2;
 
 
@@ -123,7 +123,7 @@ let RSIChartOptions = {
 			ticks: {
 				color: '#C0C0C0',
 				callback: (value, index, values) => {
-					return value + '.0';
+					return value; // + '.0';
 				}
 			},
 		},
@@ -143,8 +143,11 @@ let RSIChartOptions = {
 		tooltip: {
 			enabled: false,
 		},
+		customChartLegend: {
+			containerID: 'RSIchartLegend',
+		},
 		legend: {
-			display: true,
+			display: false,
 			align: 'end',
 			labels: {
 				color: '#FFFFFF',
@@ -216,5 +219,27 @@ const getRSIChartData = (RSIdata) => {
 	}
 }
 
-let RSIarr = calculateRSI(RSI_PERIODS, dataObj.lasts)
-rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, CHART_PLUGINS));
+
+let RSIplugins = [
+	{
+		id: 'overSoldOverBoughtLines',
+		beforeDatasetsDraw: ( chart, args, options ) => {
+			const { ctx, chartArea: {top, right, bottom, left, width, height}, scales: {x, y} } = chart;
+			ctx.save();
+			// draw line
+			ctx.strokeStyle = 'green';
+			//ctx.setLineDash([50, 50]);
+			ctx.strokeRect(left, y.getPixelForValue(30), width, 1);
+			
+			ctx.strokeStyle = 'red';
+			ctx.strokeRect(left, y.getPixelForValue(70), width, 1);
+
+			ctx.restore();
+		},
+	},
+];
+RSIplugins.push(...getPluginsByIDs(['customChartLegend']));
+
+
+let RSIarr = calculateRSI(RSI_PERIODS, dataObj.lasts);
+rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, RSIplugins));
