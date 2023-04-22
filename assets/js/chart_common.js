@@ -1,3 +1,17 @@
+const createIframeRefresher = (id, func, seconds) => {
+	if (document.getElementById(id) !== null) {
+		document.body.removeChild(document.getElementById(id));
+	}
+	const iframe = document.createElement('iframe');
+	const html = '<html><head><meta id="' + id + '" http-equiv="refresh" content="' + seconds + '"><script>parent.' + func + '();</script></head></html>';
+	iframe.srcdoc = html;
+	iframe.sandbox = 'allow-same-origin allow-scripts';
+	iframe.id = id;
+	iframe.style.display = 'none';
+	document.body.appendChild(iframe);
+};
+
+
 const getPluginsByIDs = (ids) => {
 	let a = [];
 	CHART_PLUGINS.forEach(p => {
@@ -31,7 +45,6 @@ const getOrCreateLegendList = (chart, id) => {
 	}
 };
 
-const customChartLegendCSSClass = "customChartLegendCSSClass";
 
 const CHART_PLUGINS = [
 	{
@@ -50,7 +63,6 @@ const CHART_PLUGINS = [
 		id: 'customChartLegend',
 		afterUpdate(chart, args, options) {
 			const ul = getOrCreateLegendList(chart, options.containerID);
-			ul.class = customChartLegendCSSClass;
 		
 			// Remove old legend items
 			while (ul.firstChild) {

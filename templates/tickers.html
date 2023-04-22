@@ -14,8 +14,13 @@
 		</script>
 		<style>
 			.customChartLegendCSSClass {
-				display: inline-block;
-				background-color: aqua;
+				/* display: inline-block;
+				background-color: aqua; */
+				font-family: Arial, Helvetica, sans-serif;
+				font-size: 20;
+				float: right;
+				padding-right: 50px;
+				/* border: 1px solid green; */
 			}
 		</style>
 	</head>
@@ -34,14 +39,17 @@
 				| <span id="high" style="color: green">High: {{data[ticker]['high']}}</span>
 				| <button id="streamSwitch">Stream OFF</button>
 			</h2>
+
+			<!-- Price Chart -->
+			<div id="PriceChartLegend" class="customChartLegendCSSClass"></div>
 			<canvas id="{{ticker}}"></canvas>
 
 			<!-- RSI Chart -->
-			<div>
-				<span id="RSIchartLegend" style="float: right;"></span>
-			</div>
+			<div id="RSIchartLegend" class="customChartLegendCSSClass"></div>
 			<canvas id="RSIchart"></canvas>
 		</div>
+
+		<!-- <iframe id="refresher" src="http://127.0.0.1:5000/assets/refresher_frame.html"></iframe> -->
 	</body>
 
 	<script>
@@ -94,15 +102,23 @@
 			P = !P;
 		 });
 
-		let I = 1;  // refresh interval
 		let P = false;  // pause
 		function runUpdateInterval() {
-			setTimeout(runUpdateInterval, I*1000);
 			if (!P) {
 				updateChartsWithNewData();
 			}
 		}
 
-		runUpdateInterval();
+		//runUpdateInterval();
+
+		let S = (seconds) => {
+ 			createIframeRefresher('tickerRefresher', 'runUpdateInterval', seconds);
+		}
+
+		S(1);
+
+		function hello() {
+			console.log('hello');
+		}
 	</script>
 </html>

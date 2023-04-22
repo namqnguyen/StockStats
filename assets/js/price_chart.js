@@ -60,7 +60,7 @@ function getChartData(tbal) {
 			{
 				label: 'Last: ' + data.lasts[data.lasts.length-1].toFixed(2) + '          ',
 				data: data.lasts,
-				borderWidth: 1,
+				borderWidth: 2,
 				borderColor: '#FFC300',
 				backgroundColor: '#FFC300',
 			},
@@ -121,7 +121,7 @@ let chartOptions = {
 			enabled: false,
 		},
 		legend: {
-			display: true,
+			display: false,
 			align: 'end',
 			labels: {
 				color: '#FFFFFF',
@@ -133,6 +133,9 @@ let chartOptions = {
 				console.log('onhover');
 				//document.getElementById("WAL").style.cursor = 'pointer';
 			},
+		},
+		customChartLegend: {
+			containerID: 'PriceChartLegend',
 		},
 	},
 	elements:{
@@ -169,6 +172,7 @@ function getChartConfig(type, data, options, plugins) {
 
 
 const updateChartsWithNewData = async () => {
+	// console.log(Date())
 	if (dataObj.times.length == 0) {
 		return;
 	}
@@ -259,6 +263,8 @@ function updateBidAskLastLegendPrices(bid, ask, last) {
 	stockChart.update();
 }
 
+let PriceChartPlugins = [];
+PriceChartPlugins.push(...getPluginsByIDs(['customChartLegend']));
 
 const ctx = document.getElementById(ticker);
-let stockChart = new Chart(ctx, getChartConfig('line', getChartData(dataObj), chartOptions, []));
+let stockChart = new Chart(ctx, getChartConfig('line', getChartData(dataObj), chartOptions, PriceChartPlugins));

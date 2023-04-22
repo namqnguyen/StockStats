@@ -57,7 +57,6 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list
 	conditions = {'datetime': {'$gte': begin, '$lte': end}}
 	data = {}
 	for ticker in tickers:
-		# docs = await mongo_db[ticker].find(conditions).to_list(length=5000)
 		docs = await mongo_db[ticker].find(conditions, {'datetime': 1, 'content.items': {'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1, 'volume': 1}}).sort('datetime', 1).to_list(length=50000)
 		data[ticker] = {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0}
 		prev_volume = 0
@@ -70,27 +69,25 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list
 				continue
 			et = item['time'].split(' ')[2]
 			time = doc['datetime'] + timedelta(hours=int(int(TIMES[et])/100))
-			# datetime.strptime(f'{t[0]} {t[1]} {TIMES[t[2]]}', '%I:%M:%S %p %z') # item['time'].split(' ')[0]
-			data[ticker]['times'].append(time.strftime('%H:%M:%S'))
-			data[ticker]['bids'].append(float(item['bid']))
-			data[ticker]['asks'].append(float(item['ask']))
-			data[ticker]['lasts'].append(float(item['last']))
-			data[ticker]['volumes'].append(float(item['volume']))
-			try:
-				data[ticker]['low'] = float(item['low'])
-				data[ticker]['high'] = float(item['high'])
-			except:
-				pass
-
+			volume = float(item['volume'])
+			if (volume > prev_volume):
+				data[ticker]['times'].append(time.strftime('%H:%M:%S'))
+				data[ticker]['bids'].append(float(item['bid']))
+				data[ticker]['asks'].append(float(item['ask']))
+				data[ticker]['lasts'].append(float(item['last']))
+				data[ticker]['volumes'].append(volume)
+				prev_volume = volume
+				try:
+					data[ticker]['low'] = float(item['low'])
+					data[ticker]['high'] = float(item['high'])
+				except:
+					pass
 	return data
 
 
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-	#tickers = await mongo_db.list_collection_names()
-	#data = await get_ticker_data(tickers)
-	#return templates.TemplateResponse("tickers.html", {"request": request, "data": data})
 	return ''
 
 

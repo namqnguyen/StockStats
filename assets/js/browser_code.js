@@ -81,34 +81,51 @@ function getProps() {
 }
 
 
-const runAtSpecificTimeOfDay = (hour, minutes, func) => {
+const REFRESHER_FRAME_ID = 'tickerIframeRefresher';
+const createIframeRefresher = (id, func, seconds) => {
+  if (document.getElementById(id) !== null) {
+    document.body.removeChild(document.getElementById(id));
+  }
+	const iframe = document.createElement('iframe');
+	const html = '<html><head><meta id="' + id + '" http-equiv="refresh" content="' + seconds + '"><script>parent.' + func + '();</script></head></html>';
+	iframe.srcdoc = html;
+	iframe.sandbox = 'allow-same-origin allow-scripts';
+	iframe.id = id;
+	iframe.style.display = 'none';
+	document.body.appendChild(iframe);
+};
+
+const runAtSpecificTimeOfDay = (hour, minutes, runOnce, func) => {
   const twentyFourHours = 86400000;
   const now = new Date();
   let eta_ms = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minutes, 0, 0).getTime() - now;
   if (eta_ms < 0) {
     eta_ms += twentyFourHours;
+    if (runOnce) {
+      func();
+    }
   }
   setTimeout( func, eta_ms );
 }
 
 
 function run() {
-  setTimeout(run, S*1000);
-  if (P !== 1) {
+  if (!P) {
     getAndSave();
   }
 }
 
 const TICKERS = ['WAL'];
-const KEEP_ALIVE_INTERVAL = 180*1000
-// let KA = setInterval(keepAlive, KEEP_ALIVE_INTERVAL);
-let S = 10;
-let P = 0;
-setTimeout(run, 100);
+let P = false;  // 1=pause fetching, 0=do fetching
+let S = (secs) => {
+  createIframeRefresher(REFRESHER_FRAME_ID, 'run', secs);
+}
 
-// Set time to auto set interval
-if (S>1) {
-  runAtSpecificTimeOfDay( 8, 25, ()=>{S=1} );
-} else {
-  runAtSpecificTimeOfDay( 3, 01, ()=>{S=10} );
+
+runAtSpecificTimeOfDay( 8, 25, true, ()=>{S(1)} );
+runAtSpecificTimeOfDay( 15, 01, true, ()=>{S(10)} );
+
+
+function hello() {
+  console.log('hello');
 }
