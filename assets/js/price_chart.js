@@ -172,7 +172,6 @@ function getChartConfig(type, data, options, plugins) {
 
 
 const updateChartsWithNewData = async () => {
-	// console.log(Date())
 	if (dataObj.times.length == 0) {
 		return;
 	}

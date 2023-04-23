@@ -73,6 +73,7 @@
 			}
 		}
 	</script>
+	<script src="/assets/js/common.js"></script>
 	<script src="/assets/js/chart_common.js"></script>
 	<script src="/assets/js/price_chart.js"></script>
 	<script src="/assets/js/rsi_chart.js"></script>
@@ -111,14 +112,13 @@
 
 		//runUpdateInterval();
 
-		let S = (seconds) => {
- 			createIframeRefresher('tickerRefresher', 'runUpdateInterval', seconds);
-		}
+		// let S = (seconds) => {
+ 		// 	createIframeRefresher('tickerRefresher', 'runUpdateInterval', seconds);
+		// }
 
-		S(1);
+		// S(1);
 
-		function hello() {
-			console.log('hello');
-		}
+		setInterval2(runUpdateInterval, 1000);
+
 	</script>
 </html>
