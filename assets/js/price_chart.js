@@ -178,8 +178,8 @@ const updateChartsWithNewData = async () => {
 	let end = dataObj.times[dataObj.times.length - 1];
 	let begin = end.split(':');
 	begin[2] = parseInt(begin[2]) + 1;  // want 1 second more
-	
-	let url = ticker + '?from_time=' + begin.join(':');
+	prev_volume = dataObj.volumes[dataObj.volumes.length - 1];
+	let url = ticker + '?prev_volume=' + prev_volume + '&from_time=' + begin.join(':');
 	let newData = await getNewTickerData(url);
 
 	if (newData[ticker].times.length > 0) {

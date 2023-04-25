@@ -124,8 +124,3 @@ let S = (secs) => {
 
 runAtSpecificTimeOfDay( 8, 25, true, ()=>{S(1)} );
 runAtSpecificTimeOfDay( 15, 01, true, ()=>{S(10)} );
-
-
-function hello() {
-  console.log('hello');
-}

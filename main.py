@@ -47,11 +47,12 @@ TIMES = {
 	'ET': '-0400',
 	'EST': '-0500',
 	'MARKET_OPEN_TIME': '09:30:00',
-	'MARKET_CLOSE_TIME': '16:00:00'
+	'MARKET_CLOSE_TIME': '16:00:00',
+	'PREV_VOLUME': 0
 }
 
 
-async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list:
+async def get_ticker_data(tickers: list, begin: datetime, end: datetime, prev_volume: float = 0) -> list:
 	if begin is None or end is None:
 		return []
 	conditions = {'datetime': {'$gte': begin, '$lte': end}}
@@ -59,7 +60,6 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime) -> list
 	for ticker in tickers:
 		docs = await mongo_db[ticker].find(conditions, {'datetime': 1, 'content.items': {'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1, 'volume': 1}}).sort('datetime', 1).to_list(length=50000)
 		data[ticker] = {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0}
-		prev_volume = 0
 		for doc in docs:
 			items = doc['content']['items']
 			if len(items) == 0:
@@ -105,7 +105,14 @@ def get_datetime(date: str = None) -> dict:
 
 
 @app.get("/{ticker}")
-async def ticker_data(request: Request, ticker: str = None, bm: int|str = None, date: str = None, from_time: int|str = None, to_time: int|str = None):
+async def ticker_data(request: Request,
+		      ticker: str = None,
+			  bm: int|str = None,
+			  date: str = None,
+			  from_time: int|str = None,
+			  to_time: int|str = None,
+			  prev_volume: float = 0,
+			  prev: int = 0):
 	dt = get_datetime(date)
 	if type(to_time) is int and to_time > 0:
 		dt['end'] =  dt['begin'] + timedelta(hours = to_time + dt['offset_hrs'])
@@ -123,14 +130,18 @@ async def ticker_data(request: Request, ticker: str = None, bm: int|str = None, 
 		sec = int(from_time.split(':')[2]) if len(from_time.split(':')) > 2 else 0
 		dt['begin'] = dt['begin'] + timedelta(hours = hr + dt['offset_hrs'], minutes=min, seconds=sec)
 
+	# go back x minutes
 	if bm is not None and bm >= 0:
 		if bm == 0:
+			# 9am; 7 is number of hrs we want; market is opened for 6.5 hrs
 			dt['end'] = dt['begin'] + timedelta(hours = 9 + 7 + dt['offset_hrs'])
 			dt['begin'] = dt['begin'] + timedelta(hours = 9 + dt['offset_hrs'], minutes=30)
 		else:
 			dt['begin'] = dt['utcdt'] - timedelta(minutes=bm)
 
-	data = await get_ticker_data([ticker], dt['begin'], dt['end'])
+	# if prev == 0:
+	# 	TIMES['PREV_VOLUME'] = 0
+	data = await get_ticker_data([ticker], dt['begin'], dt['end'], prev_volume)
 	if request.headers.get('Content-Type') == 'application/json':
 		return ORJSONResponse(data, status_code=200)
 	else:
