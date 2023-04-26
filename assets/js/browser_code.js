@@ -100,7 +100,7 @@ const runAtSpecificTimeOfDay = (hour, minutes, runOnce, func) => {
   const now = new Date();
   let eta_ms = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minutes, 0, 0).getTime() - now;
   if (eta_ms < 0) {
-    eta_ms += twentyFourHours;
+    // eta_ms += twentyFourHours;
     if (runOnce) {
       func();
     }
@@ -126,6 +126,6 @@ let S = (secs) => {
   // createIframeRefresher(REFRESHER_FRAME_ID, 'run', secs);
 }
 
-
+S(10);
 runAtSpecificTimeOfDay( 8, 25, true, ()=>{S(1)} );
 runAtSpecificTimeOfDay( 15, 01, true, ()=>{S(10)} );

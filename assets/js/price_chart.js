@@ -1,14 +1,19 @@
 let IDX = 0;
 
 const getNewTickerData = async (url) => {
-	const response = await fetch(url, {
-	"headers": {
-		"accept": "*/*",
-		"content-type": "application/json",
-	},
-	"method": "GET"
-	});
-	return await response.json();
+	try {
+		const response = await fetch(url, {
+		"headers": {
+			"accept": "*/*",
+			"content-type": "application/json",
+		},
+		"method": "GET"
+		});
+		return await response.json();
+	} catch (e) {
+		console.log(url);
+		console.log(e);
+	}
 }
 
 
@@ -183,6 +188,8 @@ const updateChartsWithNewData = async () => {
 	let newData = await getNewTickerData(url);
 
 	if (newData[ticker].times.length > 0) {
+		// send notifications
+		doNotify();
 		// ticker price data and chart
 		dataObj.times.push(...newData[ticker].times)
 		dataObj.bids.push(...newData[ticker].bids);
