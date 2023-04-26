@@ -1,5 +1,5 @@
 const RSI_PERIODS = 14;
-const EXPSMTH_TIMES = 3;
+const EXPSMTH_TIMES = 2;
 const EXPSMTH_ALPHA = 0.2;
 
 

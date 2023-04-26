@@ -66,8 +66,8 @@
 
 		const exists = (what) => {
 			try {
-				tmp = eval(what);
-				return (tmp !== 'undefined' && tmp !== 'null') ? true : false;
+				let tmp = eval(what);
+				return (typeof tmp !== 'undefined' && tmp !== null);
 			} catch (e) {
 				return false;
 			}

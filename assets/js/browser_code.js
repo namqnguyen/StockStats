@@ -118,7 +118,12 @@ function run() {
 const TICKERS = ['WAL'];
 let P = false;  // 1=pause fetching, 0=do fetching
 let S = (secs) => {
-  createIframeRefresher(REFRESHER_FRAME_ID, 'run', secs);
+  // assming we only have 1 iframe refresher
+  if (Object.keys(INTERVALS).length > 0) {
+    clearAllIntervals();
+  }
+  setInterval2( run, secs*1000 )
+  // createIframeRefresher(REFRESHER_FRAME_ID, 'run', secs);
 }
 
 

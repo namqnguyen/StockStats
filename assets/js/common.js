@@ -1,12 +1,14 @@
-let INTERVALS = {};
+var INTERVALS = {};
 
-// var is to make it globally accessible from iframe
+// var is to make it accessible (parent window object) from child iframe
 var callFunc = (id) => {
-	INTERVALS[id]();
+	if (typeof INTERVALS[id] !== 'undefined' && INTERVALS[id] !== null) {
+		INTERVALS[id]();
+	}
 };
 
 
-let createIframe = (id, secs) => {
+var createIframe = (id, secs) => {
 	const iframe = document.createElement('iframe');
 	const html = '<html><head><meta http-equiv="refresh" content="' + secs + '"><script>parent.callFunc("'+id+'");</script></head></html>';
 	iframe.srcdoc = html;
@@ -17,12 +19,12 @@ let createIframe = (id, secs) => {
 };
 
 
-let setInterval2 = (func, ms, ...args) => {
-	let id = 'func_' + Date.now();
+var setInterval2 = (func, ms, ...args) => {
 	let secs = Math.floor(ms/1000);
 	if (secs <= 0) {
 		return null;
 	}
+	let id = 'f' + Date.now();
 	INTERVALS[id] = ()=>{
 		func(...args);
 	};
@@ -32,6 +34,18 @@ let setInterval2 = (func, ms, ...args) => {
 };
 
 
-let clearInterval2 = (id) => {
-	document.body.removeChild( document.getElementById(id) );
-}
+var clearInterval2 = (id) => {
+	if ( typeof document.getElementById(id) !== 'undefined' ) {
+		document.body.removeChild( document.getElementById(id) );
+	}
+};
+
+
+var clearAllIntervals = () => {
+	Object.keys(INTERVALS).forEach(id => {
+		if (typeof INTERVALS[id] !== 'undefined' && INTERVALS[id] !== null) {
+			clearInterval2(id);
+		}
+	});
+	INTERVALS = {};
+};
