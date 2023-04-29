@@ -2,31 +2,39 @@ var WHAT = ['bid', 'ask', 'last'];
 var notifications = {};
 
 
-var createNotification = (name, what, condition, callback, interval) => {
-	if (!WHAT.includes(what)) return what + ' not allowed';
+// TODO: make promise
+var createNotification = (name, check, condition, callback, interval) => {
+	if (!WHAT.includes(check)) return check + ' not allowed';
 	notifications[name] = {
+		check: check,
+		condition: condition,
 		interval: interval,
 		func: ()=>{
 			try {
-				let arrName = what+'s';
+				let arrName = check+'s';
 				let price = dataObj[arrName][dataObj[arrName].length - 1];
 				let cond = price + ' ' + condition;
 				if ( eval(cond) ) {
-					callback(what, price, condition);
+					callback(check, price, name);
 				}
+				notifications[name].lastChecked = Date.now();
 			} catch (e) {
 				console.log(e);
 			}
 		},
 		lastChecked: null,
+		lastNotified: null,
 	};
-	return 'notification created';
+	return 'notification "'+ name +'" created';
 };
 
 
-var notify = (what, price, condition) => {
-	var text = what + ' met:  ' + price + ' ' + condition;
-	var notification = new Notification("WAL Alarm", { body: text });
+// callback for alarms
+var notify = (check, price, name) => {
+	let alarm = notifications[name];
+	var text = check + ' met:  ' + price + ' ' + alarm.condition;
+	new Notification("WAL Alarm", { body: text });
+	alarm.lastNotified = Date.now();
 };
 
 
@@ -38,7 +46,9 @@ var doNotify = () => {
 
 
 var deleteNotification = (name) => {
-	delete notifications[name];
+	if ( Object.keys(notifications).includes(name) ) {
+		delete notifications[name];
+	}
 };
 
 
