@@ -73,13 +73,23 @@
 			}
 		}
 	</script>
+	<script type="module">
+		import {TickerNotification} from "/assets/js/alarm2.mjs";
+		let allowed = ['bids', 'asks', 'lasts'];
+		TickerNotification.askPermission((p)=>{
+			if (p !== 'granted') {
+				console.log('Permission is: ' + p);
+				return;
+			}
+			window.tickerNotie = new TickerNotification(allowed, dataObj);
+		});
+	</script>
 	<script src="/assets/js/common.js"></script>
 	<script src="/assets/js/alarm.js"></script>
 	<script src="/assets/js/chart_common.js"></script>
 	<script src="/assets/js/price_chart.js"></script>
 	<script src="/assets/js/rsi_chart.js"></script>
 	<script>
-
 		let timesArr = [-1, 0, 180, 120, 90, 60, 45, 30, 20, 15, 10, 5, 2, 1];
 		timesArr.forEach(element => {
 			let text = element + (element > 1 ? 'm' : 'm');

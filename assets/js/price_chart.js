@@ -189,7 +189,9 @@ const updateChartsWithNewData = async () => {
 
 	if (newData[ticker].times.length > 0) {
 		// send notifications
-		doNotify();
+		if (exists('window.tickerNotie')) {
+			tickerNotie.check();
+		}
 		// ticker price data and chart
 		dataObj.times.push(...newData[ticker].times)
 		dataObj.bids.push(...newData[ticker].bids);

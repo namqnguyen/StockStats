@@ -1,9 +1,60 @@
 class BasicNotification {
+	static askPermission(callback = null) {
+		// function to actually ask the permissions
+		function handleCallback(permission) {
+			// set the button to shown or hidden, depending on what the user answers
+			// notificationBtn.style.display = Notification.permission === "granted" ? "none" : "block";
+			try {
+				if (callback !== null) {
+					callback(permission);
+				}
+			} catch(e) {
+				return e;
+			}
+		}
+	
+		// Let's check if the browser supports notifications
+		if (!("Notification" in window)) {
+			console.log("This browser does not support notifications.");
+		} else if ( this.isPromiseCapable() ) {
+			Notification.requestPermission().then((permission) => {
+				handleCallback(permission);
+			});
+		} else {
+			Notification.requestPermission((permission) => {
+				handleCallback(permission);
+			});
+		}
+	}
+
+	static isPromiseCapable() {
+		try {
+			Notification.requestPermission().then();
+			return true;
+		} catch (e) {
+			return false;
+		}
+	}
+
+	static notify(title, obj) {
+		try {
+			if (Notification.permission === 'granted') {
+				new Notification(title, obj);
+				return true;
+			}
+		} catch(e) {
+			return e;
+		}
+	}
+}
+
+class TickerNotification extends BasicNotification {
+	#notifications = {};
 
 	constructor (allowedArr, dataObj) {
+		super();
 		this.allowed = allowedArr;
 		this.data = dataObj;
-		this.notifications = {};
 	}
 
 	static getInstance(allowedArr, dataObj) {
@@ -13,22 +64,21 @@ class BasicNotification {
 		return this.instance;
 	}
 
-	create = (name, check, condition, interval = -1, callback = this.cb)=>{
-		let key = check+'s';
-		if ( !this.allowed.includes(check) || !Object.keys(this.data).includes(key) ) {
-			return check + ' not allowed or does not exist';
+	create = (name, key, condition, interval = -1, callback = this.cb)=>{
+		if ( !this.allowed.includes(key) || !(key in this.data) ) {
+			return key + ' not allowed or does not exist in data object';
 		}
-		this.notifications[name] = {
-			check: check,
+		this.#notifications[name] = {
+			check: key,
 			condition: condition,
 			interval: interval,
 			func: ()=>{
 				try {
-					let notie = this.notifications[name];
+					let notie = this.#notifications[name];
 					let val = this.data[key][this.data[key].length - 1];
 					let cond = val + ' ' + condition;
 					if ( eval(cond) ) {
-						callback(check, val, name);
+						callback(key, val, name);
 					}
 					notie.lastChecked = Date.now();
 				} catch (e) {
@@ -42,15 +92,19 @@ class BasicNotification {
 	}
 
 	cb = (key, val, name)=>{
-		let alarm = this.notifications[name];
+		let alarm = this.#notifications[name];
 		var text = key + ' met:  ' + val + ' ' + alarm.condition;
-		new Notification(name + " Alarm", { body: text });
-		alarm.lastNotified = Date.now();
+		let tmp = TickerNotification.notify(name + " Alarm", { body: text });
+		if ( tmp === true ) {
+			alarm.lastNotified = Date.now();
+		} else {
+			console.log(tmp);
+		}
 	}
 
 	check = ()=>{
 		this.getNames().forEach(e => {
-			let notie = this.notifications[e];
+			let notie = this.#notifications[e];
 			notie.func();
 			if ( notie.interval === -1 && !notie.lastNotified !== null ) {
 				this.delete(e)
@@ -59,23 +113,26 @@ class BasicNotification {
 	}
 
 	delete = (name)=>{
-		if ( this.getNames().includes(name) ) {
-			delete this.notifications[name];
-			return true;
+		try {
+			if ( name in this.#notifications )  {
+				delete this.#notifications[name];
+				return true;
+			}
+		} catch(e) {
+			return e;
 		}
-		return false;
 	}
 	
 	
 	deleteAll = ()=>{
-		this.notifications = {};
+		this.#notifications = {};
 	}
 
 	getNames = ()=>{
-		return Object.keys(this.notifications);
+		return Object.keys(this.#notifications);
 	}
 }
 
-const StockNotification = BasicNotification.getInstance(['bid'], {bids:[5]});
+// const TickerNotie = TickerNotification.getInstance(['bid'], {bids:[5]});
 
-export default StockNotification;
+export {BasicNotification, TickerNotification};
