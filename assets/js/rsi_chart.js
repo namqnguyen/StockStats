@@ -173,10 +173,10 @@ let RSIChartOptions = {
 };
 
 
-const getRSIChartData = (RSIdata) => {
+const getRSIChartData = (RSIdata, old = null) => {
 	try {
 		if (!exists(RSIdata) || RSIdata.length === 0) {
-			return [];
+			return {};
 		}
 		let expSmthData = getExponentialSmoothing(RSIdata, EXPSMTH_TIMES);
 		let volData = calculateVolumeChange(dataObj.volumes.slice(IDX));
@@ -190,6 +190,7 @@ const getRSIChartData = (RSIdata) => {
 					borderWidth: 1,
 					borderColor: '#706247',
 					backgroundColor: '#706247',
+					hidden: (old != null) ? old.datasets[0].hidden : false,
 				},
 				//{label: 'overbought', data: overbought, borderWidth: 1, borderColor: 'green'},
 				//{label: 'oversold', data: oversold, borderWidth: 1, borderColor: 'red'},
@@ -199,6 +200,7 @@ const getRSIChartData = (RSIdata) => {
 					borderWidth: 1,
 					borderColor: '#FFC300',
 					backgroundColor: '#FFC300',
+					hidden: (old != null) ? old.datasets[1].hidden : false,
 				},
 				{
 					label: 'Volume: ' + volData[volData.length - 1] + '          ',
@@ -209,6 +211,7 @@ const getRSIChartData = (RSIdata) => {
 					backgroundColor: volColor, //'#00ffff',
 					fillColor: volColor,
 					yAxisID: 'y_volume',
+					hidden: (old != null) ? old.datasets[2].hidden : false,
 				},
 			]
 		}

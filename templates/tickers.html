@@ -45,7 +45,12 @@
 			<canvas id="{{ticker}}"></canvas>
 
 			<!-- RSI Chart -->
-			<div id="RSIchartLegend" class="customChartLegendCSSClass"></div>
+			<div width="100%" style="columns:2;">
+				<div id="volume-controls" style="font-family: Arial, Helvetica, sans-serif; color:#FFFFFF">
+					<input id="volume-Y-axis-checkbox" type="checkbox">Vol. Y-axis?</input>
+				</div>
+				<div id="RSIchartLegend" class="customChartLegendCSSClass"></div>
+			</div>
 			<canvas id="RSIchart"></canvas>
 		</div>
 
@@ -62,6 +67,7 @@
 			asks: {{data[ticker]['asks']}},
 			lasts: {{data[ticker]['lasts']}},
 			volumes: {{data[ticker]['volumes']}},
+			hidden: ['times'],
 		};
 
 		const exists = (what) => {
@@ -113,6 +119,21 @@
 			P ? $('#streamSwitch').html('Stream OFF') : $('#streamSwitch').html('Stream ON');
 			P = !P;
 		 });
+
+		[30000, 20000, 10000].forEach( vol => {
+			a = $('<a href="#">' + vol + '</a>');
+			a.click( e => {
+				e.preventDefault();
+				rsiChart.options.scales.y_volume.max = vol;
+				return false;
+			});
+			$('#volume-controls').append(' | ')
+			$('#volume-controls').append(a);
+		});
+
+		$('#volume-Y-axis-checkbox').click( e => {
+			rsiChart.options.scales.y_volume.display = !rsiChart.options.scales.y_volume.display;
+		});
 
 		let P = false;  // pause
 		function runUpdateInterval() {

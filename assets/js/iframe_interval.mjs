@@ -3,7 +3,7 @@ class IframeInterval {
 
 	#intervals = {};
 
-	add (id, func, args) {
+	#add (id, func, args) {
 		this.#intervals[id] = ()=>{
 			func(...args);
 		};

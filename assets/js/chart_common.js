@@ -81,14 +81,15 @@ const CHART_PLUGINS = [
 				li.style.marginLeft = '10px';
 		
 				li.onclick = () => {
-				const {type} = chart.config;
-				if (type === 'pie' || type === 'doughnut') {
-					// Pie and doughnut charts only have a single dataset and visibility is per item
-					chart.toggleDataVisibility(item.index);
-				} else {
-					chart.setDatasetVisibility(item.datasetIndex, !chart.isDatasetVisible(item.datasetIndex));
-				}
-				chart.update();
+					const {type} = chart.config;
+					if (type === 'pie' || type === 'doughnut') {
+						// Pie and doughnut charts only have a single dataset and visibility is per item
+						chart.toggleDataVisibility(item.index);
+					} else {
+						chart.setDatasetVisibility(item.datasetIndex, !chart.isDatasetVisible(item.datasetIndex));
+						chart.config.data.datasets[item.datasetIndex].hidden = !chart.isDatasetVisible(item.datasetIndex);
+					}
+					chart.update();
 				};
 		
 				// Color box

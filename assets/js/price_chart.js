@@ -30,7 +30,7 @@ function getDataFromIndex(idx) {
 	};
 }
 
-function getChartData(tbal) {
+function getChartData(tbal, old = null) {
 	if ( !exists(tbal) || tbal.times.length === 0) {
 		return {};
 	}
@@ -54,6 +54,7 @@ function getChartData(tbal) {
 				borderWidth: 1,
 				borderColor: 'green',
 				backgroundColor: 'green',
+				hidden: (old != null) ? old.datasets[0].hidden : false,
 			},
 			{
 				label: 'Ask: ' + data.asks[data.asks.length-1].toFixed(2),
@@ -61,6 +62,7 @@ function getChartData(tbal) {
 				borderWidth: 1,
 				borderColor: 'red',
 				backgroundColor: 'red',
+				hidden: (old != null) ? old.datasets[1].hidden : false,
 			},
 			{
 				label: 'Last: ' + data.lasts[data.lasts.length-1].toFixed(2) + '          ',
@@ -68,6 +70,7 @@ function getChartData(tbal) {
 				borderWidth: 2,
 				borderColor: '#FFC300',
 				backgroundColor: '#FFC300',
+				hidden: (old != null) ? old.datasets[2].hidden : false,
 			},
 		],
 		text: 'blahblahblah'
@@ -199,7 +202,7 @@ const updateChartsWithNewData = async () => {
 		dataObj.lasts.push(...newData[ticker].lasts);
 		dataObj.volumes.push(...newData[ticker].volumes);
 		let priceData = getDataFromIndex(IDX);
-		stockChart.data = getChartData(priceData);
+		stockChart.data = getChartData(priceData, stockChart.data);
 		stockChart.update();
 		$('#low').text().replace(newData[ticker].low)
 		$('#high').text().replace(newData[ticker].high)
@@ -208,7 +211,7 @@ const updateChartsWithNewData = async () => {
 
 		// RSI data and chart
 		let RSIarr = calculateRSI(RSI_PERIODS, priceData.lasts);
-		rsiChart.data = getRSIChartData(RSIarr);
+		rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
 		rsiChart.update();
 		//rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [horizontalLine]));
 	}
@@ -241,13 +244,13 @@ function showChartMinsBack(minsBack) {
 	}
 	if (IDX !== oldIDX) {
 		let priceData = getDataFromIndex(IDX);
-		stockChart.data = getChartData(priceData);
+		stockChart.data = getChartData(priceData, stockChart.data);
 		stockChart.update();
 		// stockChart.destroy();
 		//stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
 
 		let RSIarr = calculateRSI(RSI_PERIODS, dataObj.lasts.slice(IDX));
-		rsiChart.data = getRSIChartData(RSIarr);
+		rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
 		rsiChart.update();
 		// rsiChart.destroy();
 		// rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [CHART_PLUGINS[1]]));
