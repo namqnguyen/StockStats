@@ -50,6 +50,9 @@ TIMES = {
 	'MARKET_CLOSE_TIME': '16:00:00'
 }
 
+TICKERS = ['BAC', 'WFC', 'WAL', 'PACW', 'SCHW', 'ZION', 'KEY', 'JPM']
+TICKERS.sort()
+
 
 async def get_ticker_data(tickers: list, begin: datetime, end: datetime, prev_volume: float = 0) -> list:
 	if begin is None or end is None:
@@ -91,7 +94,6 @@ async def get_ticker_data2(tickers: list, begin: datetime, end: datetime, prev_v
 	data = {}
 	for ticker in tickers:
 		docs = await mongo_client['stockstats2'][ticker].find(conditions, {'datetime': 1, 'content': {'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1, 'volume': 1}}).sort('datetime', 1).to_list(length=50000)
-
 		data[ticker] = {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0}
 		for doc in docs:
 			item = doc['content']
@@ -170,6 +172,11 @@ async def ticker_data(request: Request,
 			dt['begin'] = dt['utcdt'] - timedelta(minutes=bm)
 
 	data = await get_ticker_data2([ticker], dt['begin'], dt['end'], prev_volume)
+	# when we want data for all tickers, we need to fix volume for current ticker
+	for k in TICKERS:
+		if k not in data:
+			data[k] = {}
+
 	if request.headers.get('Content-Type') == 'application/json':
 		return ORJSONResponse(data, status_code=200)
 	else:

@@ -28,7 +28,12 @@
 	<body style="background-color:black;">
 		<div class="chart-wrapper">
 			<h2 id="timesheader" style="background-color: white;">
-				<span id="ticker">{{ticker}}</span>
+				<select id="ticker-select">
+					<option value="">Ticker</option>
+					{% for key in data.keys() %}
+					<option value="{{key}}">{{key}}</option>
+					{% endfor %}
+				</select>
 				<input type="text" id="date" value="{{date if date}}" size="7" />
 				<input type="text" id="from_time" value="{{from_time if from_time}}" size="3" />
 				<input type="text" id="to_time" value="{{to_time if to_time}}" size="3" />
@@ -41,13 +46,19 @@
 			</h2>
 
 			<!-- Price Chart -->
-			<div id="PriceChartLegend" class="customChartLegendCSSClass"></div>
+			<div width="100%" style="columns:2;">
+				<div id="ticker" style="font-family: Arial, Helvetica, sans-serif; color:#FFFFFF">{{ticker}}</div>
+				<div id="PriceChartLegend" class="customChartLegendCSSClass"></div>
+			</div>
 			<canvas id="{{ticker}}"></canvas>
 
 			<!-- RSI Chart -->
 			<div width="100%" style="columns:2;">
-				<div id="volume-controls" style="font-family: Arial, Helvetica, sans-serif; color:#FFFFFF">
+				<div style="font-family: Arial, Helvetica, sans-serif; color:#FFFFFF">
 					<input id="volume-Y-axis-checkbox" type="checkbox">Vol. Y-axis?</input>
+					<select id="volume-controls">
+						<option value="">Max Y-Axis</option>
+					</select>
 				</div>
 				<div id="RSIchartLegend" class="customChartLegendCSSClass"></div>
 			</div>
@@ -110,6 +121,11 @@
 			$('#timesContainer').append(a);
 		});
 
+		$('#ticker-select').change( e => {
+			let val = $("#ticker-select option:selected").attr('value');
+			if (val === '') return;
+			window.location = val;
+		})
 
 		$('#skipInterval').blur( (e) => { DATAINTERVAL = parseInt(e.target.value) } );
 		$('#skipInterval').keypress( (e) => { if (e.which == 13) { DATAINTERVAL = parseInt(e.target.value) } } );
@@ -120,15 +136,14 @@
 			P = !P;
 		 });
 
-		[30000, 20000, 10000].forEach( vol => {
-			a = $('<a href="#" style="color:#FFFFFF">' + vol + '</a>');
-			a.click( e => {
-				e.preventDefault();
-				rsiChart.options.scales.y_volume.max = vol;
-				return false;
-			});
-			$('#volume-controls').append(' | ')
+		[100000, 90000, 80000, 70000, 60000, 50000, 40000, 30000, 20000, 10000].forEach( vol => {
+			a = $('<option value="'+ vol +'">'+ vol +'</option>');
 			$('#volume-controls').append(a);
+		});
+		$('#volume-controls').change( e => {
+			let val = $("#volume-controls option:selected").attr('value')
+			if (val === '') return;
+			rsiChart.options.scales.y_volume.max = parseInt(val);
 		});
 
 		$('#volume-Y-axis-checkbox').click( e => {
