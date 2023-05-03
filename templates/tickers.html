@@ -121,7 +121,7 @@
 		 });
 
 		[30000, 20000, 10000].forEach( vol => {
-			a = $('<a href="#">' + vol + '</a>');
+			a = $('<a href="#" style="color:#FFFFFF">' + vol + '</a>');
 			a.click( e => {
 				e.preventDefault();
 				rsiChart.options.scales.y_volume.max = vol;
