@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, ORJSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
-from db import DATABASE, mongo_db
+from db import DATABASE, mongo_db, mongo_client
 
 load_dotenv()
 
@@ -47,8 +47,7 @@ TIMES = {
 	'ET': '-0400',
 	'EST': '-0500',
 	'MARKET_OPEN_TIME': '09:30:00',
-	'MARKET_CLOSE_TIME': '16:00:00',
-	'PREV_VOLUME': 0
+	'MARKET_CLOSE_TIME': '16:00:00'
 }
 
 
@@ -65,6 +64,37 @@ async def get_ticker_data(tickers: list, begin: datetime, end: datetime, prev_vo
 			if len(items) == 0:
 				continue
 			item = items[0]
+			if item['bid'] == '':
+				continue
+			et = item['time'].split(' ')[2]
+			time = doc['datetime'] + timedelta(hours=int(int(TIMES[et])/100))
+			volume = float(item['volume'])
+			if (volume > prev_volume):
+				data[ticker]['times'].append(time.strftime('%H:%M:%S'))
+				data[ticker]['bids'].append(float(item['bid']))
+				data[ticker]['asks'].append(float(item['ask']))
+				data[ticker]['lasts'].append(float(item['last']))
+				data[ticker]['volumes'].append(volume)
+				prev_volume = volume
+				try:
+					data[ticker]['low'] = float(item['low'])
+					data[ticker]['high'] = float(item['high'])
+				except:
+					pass
+	return data
+
+
+async def get_ticker_data2(tickers: list, begin: datetime, end: datetime, prev_volume: float = 0) -> list:
+	if begin is None or end is None:
+		return []
+	conditions = {'datetime': {'$gte': begin, '$lte': end}}
+	data = {}
+	for ticker in tickers:
+		docs = await mongo_client['stockstats2'][ticker].find(conditions, {'datetime': 1, 'content': {'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1, 'volume': 1}}).sort('datetime', 1).to_list(length=50000)
+
+		data[ticker] = {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0}
+		for doc in docs:
+			item = doc['content']
 			if item['bid'] == '':
 				continue
 			et = item['time'].split(' ')[2]
@@ -139,14 +169,33 @@ async def ticker_data(request: Request,
 		else:
 			dt['begin'] = dt['utcdt'] - timedelta(minutes=bm)
 
-	# if prev == 0:
-	# 	TIMES['PREV_VOLUME'] = 0
-	data = await get_ticker_data([ticker], dt['begin'], dt['end'], prev_volume)
+	data = await get_ticker_data2([ticker], dt['begin'], dt['end'], prev_volume)
 	if request.headers.get('Content-Type') == 'application/json':
 		return ORJSONResponse(data, status_code=200)
 	else:
 		html = templates.get_template('tickers.html').render({"request": request, "data": data, "ticker": ticker, "date": date, "from_time": from_time, "to_time": to_time})
 		return HTMLResponse(content=html, status_code=200)
+
+
+@app.post("/quotes", response_class=JSONResponse)
+async def insert_ticker_data(request: Request, data = Body()) -> ObjectId | None:
+	dt = data['timestamp']
+	if 'EST' in dt:
+		dt = dt.replace('EST', TIMES['EST'])
+	elif 'ET' in dt:
+		dt = dt.replace('ET', TIMES['ET'])
+
+	data['datetime'] = datetime.strptime(dt, '%I:%M:%S %p %z %m/%d/%y')
+	tickers = {}
+	for item in data['content']['items']:
+		ticker = item['symbol']
+		tmp = data.copy()
+		tmp['content'] = item
+		res = await mongo_client['stockstats2'][ticker].insert_one(tmp)
+		if res.inserted_id:
+			tickers[ticker] = {"id": str(res.inserted_id), 'dt': tmp['datetime'].strftime('%H:%M:%S')}
+
+	return tickers
 
 
 @app.post("/{ticker}", response_class=JSONResponse)
