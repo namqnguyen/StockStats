@@ -17,8 +17,8 @@ from stock import get_ticker_data2, get_datetime, TIMES, TICKERS, stream_ticker
 
 load_dotenv()
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-ld = logging.debug
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.CRITICAL)
+ld = logging.critical
 
 app = FastAPI()
 
@@ -56,43 +56,14 @@ async def get_quote_ticker(
 		date: str = None,
 		from_time: int|str = None,
 		to_time: int|str = None,
-		prev_volume: float = 0,
-		is_stream: bool = False,
+		prev_volume: float = 0
 	):
-	dt = get_datetime(date)
-	if type(to_time) is int and to_time > 0:
-		dt['end'] =  dt['begin'] + timedelta(hours = to_time + dt['offset_hrs'])
-	elif type(to_time) is str and to_time != '':
-		hr = int(to_time.split(':')[0])
-		min = int(to_time.split(':')[1])
-		sec = int(to_time.split(':')[2]) if len(from_time.split(':')) > 2 else 0
-		dt['end'] =  dt['begin'] + timedelta(hours = hr + dt['offset_hrs'], minutes=min, seconds=sec)
-
-	if type(from_time) is int and from_time > 0:
-		dt['begin'] = dt['begin'] + timedelta(hours = from_time + dt['offset_hrs'])
-	elif type(from_time) is str and from_time != '':
-		hr = int(from_time.split(':')[0])
-		min = int(from_time.split(':')[1])
-		sec = int(from_time.split(':')[2]) if len(from_time.split(':')) > 2 else 0
-		dt['begin'] = dt['begin'] + timedelta(hours = hr + dt['offset_hrs'], minutes=min, seconds=sec)
-
-	# go back x minutes
-	if bm is not None and bm >= 0:
-		if bm == 0:
-			# 9am; 7 is number of hrs we want; market is opened for 6.5 hrs
-			dt['end'] = dt['begin'] + timedelta(hours = 9 + 7 + dt['offset_hrs'])
-			dt['begin'] = dt['begin'] + timedelta(hours = 9 + dt['offset_hrs'], minutes=30)
-		else:
-			dt['begin'] = dt['utcdt'] - timedelta(minutes=bm)
-
+	dt = get_datetime(date, from_time, to_time, bm)
 	data = await get_ticker_data2([ticker], dt['begin'], dt['end'], prev_volume)
 	# when we want data for all tickers, we need to fix volume for current ticker
 	for k in TICKERS:
 		if k not in data:
 			data[k] = {}
-
-	if is_stream:
-		return data
 	
 	if request.headers.get('Content-Type') == 'application/json':
 		return ORJSONResponse(data, status_code=200)
@@ -137,9 +108,8 @@ async def post_q_ticker(request: Request, ticker: str, data = Body()) -> ObjectI
 
 
 @app.get("/s/{ticker}")
-async def get_stream_ticker(request: Request, ticker: str, from_time: str = '', prev_volume: float = 0):
-	data = await get_quote_ticker(request, ticker, None, None, from_time, None, prev_volume, True)
-	return EventSourceResponse( stream_ticker(request, data, 10) )
+async def get_stream_ticker(request: Request, ticker: str, from_time: str = '', prev_volume: float = 0, sleep: int = 1):
+	return EventSourceResponse( stream_ticker(request, ticker, from_time, prev_volume, sleep) )
 
 
 if __name__ == "__main__":

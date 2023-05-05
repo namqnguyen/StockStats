@@ -3,7 +3,9 @@ import asyncio
 from datetime import datetime, time as Time, timedelta
 import math
 import pytz
+from json import dumps
 from db import DATABASE, mongo_db, mongo_client
+
 
 ld = logging.debug
 
@@ -80,7 +82,7 @@ async def get_ticker_data2(tickers: list, begin: datetime, end: datetime, prev_v
 	return data
 
 
-def get_datetime(date: str = None) -> dict:
+def get_datetime(date: str = None, from_time = None, to_time = None, bm = None) -> dict:
 	utcdt = datetime.now(tz=pytz.utc).replace(tzinfo=None) #- timedelta(1)
 	nydt = datetime.now(tz=pytz.timezone('America/New_York')).replace(tzinfo=None) #- timedelta(1)
 	diff = (utcdt - nydt).seconds
@@ -90,17 +92,54 @@ def get_datetime(date: str = None) -> dict:
 	else:
 		begin = datetime.combine(utcdt, Time.min)
 	end = begin + timedelta(1)
-	return {"begin": begin, "end": end, "offset_hrs": offset_hrs, "utcdt": utcdt, "nydt": nydt}
+
+	dt = {"begin": begin, "end": end, "offset_hrs": offset_hrs, "utcdt": utcdt, "nydt": nydt}
+
+	if type(to_time) is int and to_time > 0:
+		dt['end'] =  dt['begin'] + timedelta(hours = to_time + dt['offset_hrs'])
+	elif type(to_time) is str and to_time != '':
+		hr = int(to_time.split(':')[0])
+		min = int(to_time.split(':')[1])
+		sec = int(to_time.split(':')[2]) if len(from_time.split(':')) > 2 else 0
+		dt['end'] =  dt['begin'] + timedelta(hours = hr + dt['offset_hrs'], minutes=min, seconds=sec)
+
+	if type(from_time) is int and from_time > 0:
+		dt['begin'] = dt['begin'] + timedelta(hours = from_time + dt['offset_hrs'])
+	elif type(from_time) is str and from_time != '':
+		hr = int(from_time.split(':')[0])
+		min = int(from_time.split(':')[1])
+		sec = int(from_time.split(':')[2]) if len(from_time.split(':')) > 2 else 0
+		dt['begin'] = dt['begin'] + timedelta(hours = hr + dt['offset_hrs'], minutes=min, seconds=sec)
+
+	# go back x minutes
+	if bm is not None and bm >= 0:
+		if bm == 0:
+			# 9am; 7 is number of hrs we want; market is opened for 6.5 hrs
+			dt['end'] = dt['begin'] + timedelta(hours = 9 + 7 + dt['offset_hrs'])
+			dt['begin'] = dt['begin'] + timedelta(hours = 9 + dt['offset_hrs'], minutes=30)
+		else:
+			dt['begin'] = dt['utcdt'] - timedelta(minutes=bm)
+
+	return dt
+
+def calculate_relative_datetime(dt: dict = None, from_time = None, to_time = None, bm = None) -> dict:
+	if dt is None:
+		return None
 
 
-async def stream_ticker(request = None, data: dict = {}, sleep: int = 1):
+
+async def stream_ticker(request = None, ticker: str = '', from_time: str = '', prev_volume: float = 0, sleep: int = 1):
 	while True:
 		if request != None and await request.is_disconnected():
 			break
-
-		yield {
-			"event": "update",
-			"retry": 5000,  # ms
-			"data": data
-		}
+		
+		dt = get_datetime(None, from_time, None, None)
+		data = await get_ticker_data2([ticker], dt['begin'], dt['end'], prev_volume)
+		if len(data[ticker]['times']) > 0:
+			yield {
+				"event": "update",
+				"retry": 5000,  # ms
+				"data": dumps(data)
+			}
+			prev_volume = data[ticker]['volumes'][-1]
 		await asyncio.sleep( sleep )

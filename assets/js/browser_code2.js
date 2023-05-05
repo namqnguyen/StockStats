@@ -94,6 +94,6 @@ let S = (secs) => {
 	setInterval2( run, secs*1000 )
 }
 
-// S(10);
-// runAtSpecificTimeOfDay( 8, 25, true, ()=>{S(1)} );
-// runAtSpecificTimeOfDay( 15, 01, true, ()=>{S(10)} );
+S(10);
+runAtSpecificTimeOfDay( 8, 25, true, ()=>{S(1)} );
+runAtSpecificTimeOfDay( 15, 01, true, ()=>{S(10)} );

@@ -190,7 +190,7 @@ const getRSIChartData = (RSIdata, old = null) => {
 					borderWidth: 1,
 					borderColor: '#706247',
 					backgroundColor: '#706247',
-					hidden: (old != null) ? old.datasets[0].hidden : false,
+					hidden: (old === null) ? false : old.datasets[0].hidden,
 				},
 				//{label: 'overbought', data: overbought, borderWidth: 1, borderColor: 'green'},
 				//{label: 'oversold', data: oversold, borderWidth: 1, borderColor: 'red'},

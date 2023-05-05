@@ -180,16 +180,16 @@ function getChartConfig(type, data, options, plugins) {
 }
 
 
-const updateChartsWithNewData = async () => {
-	if (dataObj.times.length == 0) {
-		return;
-	}
-	let end = dataObj.times[dataObj.times.length - 1];
-	let begin = end.split(':');
-	begin[2] = parseInt(begin[2]) + 1;  // want 1 second more
-	prev_volume = dataObj.volumes[dataObj.volumes.length - 1];
-	let url = ticker + '?prev_volume=' + prev_volume + '&from_time=' + begin.join(':');
-	let newData = await getNewTickerData(url);
+const updateChartsWithNewData = async (newData) => {
+	// if (dataObj.times.length == 0) {
+	// 	return;
+	// }
+	// let end = dataObj.times[dataObj.times.length - 1];
+	// let begin = end.split(':');
+	// begin[2] = parseInt(begin[2]) + 1;  // want 1 second more
+	// prev_volume = dataObj.volumes[dataObj.volumes.length - 1];
+	// let url = ticker + '?prev_volume=' + prev_volume + '&from_time=' + begin.join(':');
+	// let newData = await getNewTickerData(url);
 
 	if (newData[ticker].times.length > 0) {
 		// send notifications

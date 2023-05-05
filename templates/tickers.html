@@ -152,13 +152,36 @@
 		});
 
 		let P = false;  // pause
-		function runUpdateInterval() {
-			if (!P) {
-				updateChartsWithNewData();
-			}
+		// function runUpdateInterval() {
+		// 	if (!P) {
+		// 		updateChartsWithNewData();
+		// 	}
+		// }
+
+		// setInterval2(runUpdateInterval, 1000);
+
+		let evtSource = null;
+
+		let stream = () => {
+			let end = (dataObj.times.length > 0) ? dataObj.times[dataObj.times.length - 1] : [0,0,0];
+			let begin = (dataObj.times.length > 0) ? end.split(':') : [0,0,0];
+			begin[2] = (dataObj.times.length > 0) ? parseInt(begin[2]) + 1 : begin[2];  // want 1 second more
+			prev_volume = (dataObj.volumes.length > 0) ? dataObj.volumes[dataObj.volumes.length - 1] : 0;
+			let url = '/s/'+ ticker + '?prev_volume=' + prev_volume + '&from_time=' + begin.join(':');
+			evtSource = new EventSource(url);
+			evtSource.addEventListener("update", e => {
+				updateChartsWithNewData(JSON.parse(e.data));
+			});
+			evtSource.addEventListener("end", function(event) {
+				evtSource.close(); 
+			});
+		};
+
+		if (evtSource === null || evtSource.readyState === 2) {
+			stream();
 		}
 
-		setInterval2(runUpdateInterval, 1000);
+		//window.addEventListener('beforeunload', e=>evtSource.close() );
 
 	</script>
 </html>
