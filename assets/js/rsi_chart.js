@@ -70,11 +70,12 @@ function calculateVolumeChange(volArr) {
 }
 
 function getVolumeColor() {
+	let data = GL.cur_data();
 	let colorArr = [];
-	for (let i = IDX; i < dataObj.lasts.length; i++) {
-		if (dataObj.lasts[i] > dataObj.lasts[i-1]) {
+	for (let i = IDX; i < data.lasts.length; i++) {
+		if (data.lasts[i] > data.lasts[i-1]) {
 			colorArr.push('green');
-		} else if (dataObj.lasts[i] < dataObj.lasts[i-1]) {
+		} else if (data.lasts[i] < data.lasts[i-1]) {
 			colorArr.push('red');
 		} else {
 			colorArr.push('grey');
@@ -178,11 +179,12 @@ const getRSIChartData = (RSIdata, old = null) => {
 		if (!exists(RSIdata) || RSIdata.length === 0) {
 			return {};
 		}
+		let data = GL.cur_data();
 		let expSmthData = getExponentialSmoothing(RSIdata, EXPSMTH_TIMES);
-		let volData = calculateVolumeChange(dataObj.volumes.slice(IDX));
+		let volData = calculateVolumeChange(data.volumes.slice(IDX));
 		let volColor = getVolumeColor();
 		let rsiChartData = {
-			labels: dataObj.times.slice(IDX),
+			labels: data.times.slice(IDX),
 			datasets: [
 				{
 					label: 'RSI: ' + RSIdata[RSIdata.length - 1].toFixed(1),
@@ -244,5 +246,5 @@ let RSIplugins = [
 RSIplugins.push(...getPluginsByIDs(['customChartLegend']));
 
 
-let RSIarr = calculateRSI(RSI_PERIODS, dataObj.lasts);
+let RSIarr = calculateRSI(RSI_PERIODS, GL.cur_data().lasts);
 rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, RSIplugins));

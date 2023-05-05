@@ -47,10 +47,10 @@
 
 			<!-- Price Chart -->
 			<div width="100%" style="columns:2;">
-				<div id="ticker" style="font-family: Arial, Helvetica, sans-serif; color:#FFFFFF">{{ticker}}</div>
+				<div id="ticker_symbol" style="font-family: Arial, Helvetica, sans-serif; color:#FFFFFF">{{ticker}}</div>
 				<div id="PriceChartLegend" class="customChartLegendCSSClass"></div>
 			</div>
-			<canvas id="{{ticker}}"></canvas>
+			<canvas id="price_chart"></canvas>
 
 			<!-- RSI Chart -->
 			<div width="100%" style="columns:2;">
@@ -68,27 +68,24 @@
 		<!-- <iframe id="refresher" src="http://127.0.0.1:5000/assets/refresher_frame.html"></iframe> -->
 	</body>
 
+	<script src="/assets/js/common.js"></script>
 	<script>
-		const ticker = '{{ticker}}';
-		let DATAINTERVAL = 1;
-
-		let dataObj = {
-			times: {{data[ticker]['times']|safe}},
-			bids: {{data[ticker]['bids']}},
-			asks: {{data[ticker]['asks']}},
-			lasts: {{data[ticker]['lasts']}},
-			volumes: {{data[ticker]['volumes']}},
-			hidden: ['times'],
+		let GL = {
+			data_interval: 1,
+			tickers: {
+				{% for key in data.keys() %}
+				{{key}}: {
+					data: {{data[key]|safe}},
+					idx: 0,
+				},
+				{% endfor %}
+			},
+			cur_ticker: '{{ticker}}',
+			volume_y_axis_ticks: [100000, 90000, 80000, 70000, 60000, 50000, 40000, 30000, 20000, 10000],
+			mins_back_times: [-1, 0, 180, 120, 90, 60, 45, 30, 20, 15, 10, 5, 2, 1],
 		};
+		GL.cur_data = ()=>GL.tickers[GL.cur_ticker].data;
 
-		const exists = (what) => {
-			try {
-				let tmp = eval(what);
-				return (typeof tmp !== 'undefined' && tmp !== null);
-			} catch (e) {
-				return false;
-			}
-		}
 	</script>
 	<script type="module">
 		import {TickerNotification} from "/assets/js/alarm2.mjs";
@@ -98,16 +95,15 @@
 				console.log('Permission is: ' + p);
 				return;
 			}
-			window.tickerNotie = new TickerNotification(allowed, dataObj);
+			window.tickerNotie = new TickerNotification(allowed, GL.cur_data());
 		});
 	</script>
-	<script src="/assets/js/common.js"></script>
 	<script src="/assets/js/alarm.js"></script>
 	<script src="/assets/js/chart_common.js"></script>
 	<script src="/assets/js/price_chart.js"></script>
 	<script src="/assets/js/rsi_chart.js"></script>
 	<script>
-		let timesArr = [-1, 0, 180, 120, 90, 60, 45, 30, 20, 15, 10, 5, 2, 1];
+		let timesArr = GL.mins_back_times;
 		timesArr.forEach(element => {
 			let text = element + (element > 1 ? 'm' : 'm');
 			if (element === 0) {
@@ -127,16 +123,16 @@
 			window.location = val;
 		})
 
-		$('#skipInterval').blur( (e) => { DATAINTERVAL = parseInt(e.target.value) } );
-		$('#skipInterval').keypress( (e) => { if (e.which == 13) { DATAINTERVAL = parseInt(e.target.value) } } );
+		$('#skipInterval').blur( (e) => { GL.data_interval = parseInt(e.target.value) } );
+		$('#skipInterval').keypress( (e) => { if (e.which == 13) { GL.data_interval = parseInt(e.target.value) } } );
 		$('#resetInterval').click( (e) => { $('#skipInterval').val(1); $('#skipInterval').blur(); } )
-		$('#ticker').click( (e) => { stockChart.resetZoom(); } );
+		$('#ticker_symbol').click( (e) => { stockChart.resetZoom(); } );
 		$('#streamSwitch').click( (e) => {
 			P ? $('#streamSwitch').html('Stream OFF') : $('#streamSwitch').html('Stream ON');
 			P = !P;
 		 });
 
-		[100000, 90000, 80000, 70000, 60000, 50000, 40000, 30000, 20000, 10000].forEach( vol => {
+		GL.volume_y_axis_ticks.forEach( vol => {
 			a = $('<option value="'+ vol +'">'+ vol +'</option>');
 			$('#volume-controls').append(a);
 			if (vol === 10000) $('#volume-controls').val(vol);
@@ -163,11 +159,12 @@
 		let evtSource = null;
 
 		let stream = () => {
-			let end = (dataObj.times.length > 0) ? dataObj.times[dataObj.times.length - 1] : [0,0,0];
-			let begin = (dataObj.times.length > 0) ? end.split(':') : [0,0,0];
-			begin[2] = (dataObj.times.length > 0) ? parseInt(begin[2]) + 1 : begin[2];  // want 1 second more
-			prev_volume = (dataObj.volumes.length > 0) ? dataObj.volumes[dataObj.volumes.length - 1] : 0;
-			let url = '/s/'+ ticker + '?prev_volume=' + prev_volume + '&from_time=' + begin.join(':');
+			let data = GL.cur_data();
+			let end = (data.times.length > 0) ? get_last(data.times) : [0,0,0];
+			let begin = (data.times.length > 0) ? end.split(':') : [0,0,0];
+			begin[2] = (data.times.length > 0) ? parseInt(begin[2]) + 1 : begin[2];  // want 1 second more
+			prev_volume = (data.volumes.length > 0) ? get_last(data.volumes) : 0;
+			let url = '/s/'+ GL.cur_ticker + '?prev_volume=' + prev_volume + '&from_time=' + begin.join(':');
 			evtSource = new EventSource(url);
 			evtSource.addEventListener("update", e => {
 				updateChartsWithNewData(JSON.parse(e.data));

@@ -4,18 +4,8 @@ const sleep = (ms) => {
 }
 
 
-const exists = (what) => {
-	try {
-		tmp = eval(what);
-		return (tmp !== 'undefined' && tmp !== 'null') ? true : false;
-	} catch (e) {
-		return false;
-	}  
-}
-
-
 let getTickerDataFromTDA = async (tickerStr) => {
-	const paramStr = "symbols="+ tickerStr +"&forceRealTime=true&xhrToken=true&transactionToken="+ dojoConfig.transactionToken +"&request.preventCache="+ Date.now();
+	const paramStr = "symbols="+ tickerStr +"&forceRealTime=true&xhrToken=true&transactionToken="+ getProps().transactionToken +"&request.preventCache="+ Date.now();
 	const response = await fetch("https://invest.ameritrade.com/grid/m/quoteData/json?"+ paramStr, {
 		"headers": {
 			"accept": "*/*",
@@ -57,8 +47,15 @@ let saveTickerData = async (json_str) => {
 }
 
 
+var getProps = ()=>{
+	let attrs = document.getElementById('container-site').getAttribute('data-dojo-props');
+	let obj = eval('({' + attrs + '})');
+	return obj;
+};
+
+
 let getAndSave = async () => {
-	if (!exists('dojoConfig') || !exists('dojoConfig.transactionToken')) {
+	if ( !exists( getProps().transactionToken ) ) {
 		console.log('no transaction token; got logged out?');
 		return;
 	}

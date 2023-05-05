@@ -1,4 +1,4 @@
-let dLen = dataObj['times'].length
+let dLen = GL.cur_data().times.length
 let IDX = (dLen > 15*60) ? dLen - 15*60 : 0; 
 
 const getNewTickerData = async (url) => {
@@ -22,12 +22,13 @@ function getDataFromIndex(idx) {
 	if ( !exists(idx) ) {
 		idx = 0;
 	}
+	let data = GL.cur_data();
 	return {
-		times: dataObj.times.slice(idx),
-		bids: dataObj.bids.slice(idx),
-		asks: dataObj.asks.slice(idx),
-		lasts: dataObj.lasts.slice(idx),
-		volumes: dataObj.volumes.slice(idx),
+		times: data.times.slice(idx),
+		bids: data.bids.slice(idx),
+		asks: data.asks.slice(idx),
+		lasts: data.lasts.slice(idx),
+		volumes: data.volumes.slice(idx),
 	};
 }
 
@@ -36,11 +37,11 @@ function getChartData(tbal, old = null) {
 		return {};
 	}
 	let data = tbal;
-	if (DATAINTERVAL > 1) {
+	if (GL.data_interval > 1) {
 		data = {times: [], bids: [], asks: [], lasts: []};
 		for (const [k, v] of Object.entries(tbal)) {
 			for (const [i, n] of v.entries()) {
-				if (i%DATAINTERVAL == 0) {
+				if (i % GL.data_interval == 0) {
 					data[k].push(n);
 				}
 			}
@@ -180,47 +181,43 @@ function getChartConfig(type, data, options, plugins) {
 }
 
 
-const updateChartsWithNewData = async (newData) => {
-	// if (dataObj.times.length == 0) {
-	// 	return;
-	// }
-	// let end = dataObj.times[dataObj.times.length - 1];
-	// let begin = end.split(':');
-	// begin[2] = parseInt(begin[2]) + 1;  // want 1 second more
-	// prev_volume = dataObj.volumes[dataObj.volumes.length - 1];
-	// let url = ticker + '?prev_volume=' + prev_volume + '&from_time=' + begin.join(':');
-	// let newData = await getNewTickerData(url);
-
-	if (newData[ticker].times.length > 0) {
+const updateChartsWithNewData = async (newData, updateChart = true) => {
+	let newd = newData[GL.cur_ticker];
+	if (newd.times.length > 0) {
+		let data = GL.cur_data();
 		// send notifications
 		if (exists('window.tickerNotie')) {
 			tickerNotie.check();
 		}
-		// ticker price data and chart
-		dataObj.times.push(...newData[ticker].times)
-		dataObj.bids.push(...newData[ticker].bids);
-		dataObj.asks.push(...newData[ticker].asks);
-		dataObj.lasts.push(...newData[ticker].lasts);
-		dataObj.volumes.push(...newData[ticker].volumes);
-		let priceData = getDataFromIndex(IDX);
-		stockChart.data = getChartData(priceData, stockChart.data);
-		stockChart.update();
-		$('#low').text().replace(newData[ticker].low)
-		$('#high').text().replace(newData[ticker].high)
-		// stockChart.destroy();
-		// stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
+		// ticker price data
+		for (const [k, v] of Object.entries(data)) {
+			if ( Array.isArray(newd[k]) ) {
+				v.push(...newd[k]);
+			} else {
+				data[k] = newd[k];
+			}
+		}
 
-		// RSI data and chart
-		let RSIarr = calculateRSI(RSI_PERIODS, priceData.lasts);
-		rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
-		rsiChart.update();
-		//rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [horizontalLine]));
+		if (updateChart === true) {
+			$('#low').text().replace(data.low)
+			$('#high').text().replace(data.high)
+
+			let priceData = getDataFromIndex(IDX);
+			stockChart.data = getChartData(priceData, stockChart.data);
+			stockChart.update();
+
+			// RSI data and chart
+			let RSIarr = calculateRSI(RSI_PERIODS, priceData.lasts);
+			rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
+			rsiChart.update();
+		}
 	}
 }
 
 
 function showChartMinsBack(minsBack) {
-	let last = dataObj.times[dataObj.times.length - 1];
+	let data = GL.cur_data();
+	let last = data.times[data.times.length - 1];
 	let hms = last.split(':');
 	let hrs = parseInt(hms[0])
 	let mins = parseInt(hms[1]);
@@ -234,7 +231,7 @@ function showChartMinsBack(minsBack) {
 
 	if (minsBack > 0) {
 		let backAsSeconds = (hrs*60 + mins - minsBack)*60 + secs;
-		for (const [i, value] of dataObj.times.entries()) {
+		for (const [i, value] of data.times.entries()) {
 			let time = value.split(':');
 			let asSecs = parseInt(time[0])*3600 + parseInt(time[1]*60) + parseInt(time[2]);
 			if (asSecs > backAsSeconds) {
@@ -250,7 +247,7 @@ function showChartMinsBack(minsBack) {
 		// stockChart.destroy();
 		//stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
 
-		let RSIarr = calculateRSI(RSI_PERIODS, dataObj.lasts.slice(IDX));
+		let RSIarr = calculateRSI(RSI_PERIODS, data.lasts.slice(IDX));
 		rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
 		rsiChart.update();
 		// rsiChart.destroy();
@@ -278,5 +275,5 @@ function updateBidAskLastLegendPrices(bid, ask, last) {
 let PriceChartPlugins = [];
 PriceChartPlugins.push(...getPluginsByIDs(['customChartLegend']));
 
-const ctx = document.getElementById(ticker);
+const ctx = document.getElementById('price_chart');
 let stockChart = new Chart(ctx, getChartConfig('line', getChartData( getDataFromIndex(IDX) ), chartOptions, PriceChartPlugins));

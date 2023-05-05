@@ -64,3 +64,17 @@ const runAtSpecificTimeOfDay = (hour, minutes, runOnce, func) => {
 	}
 	setTimeout( func, eta_ms );
 }
+
+
+const exists = (what) => {
+	try {
+		let tmp = eval(what);
+		return (typeof tmp !== 'undefined' && tmp !== null);
+	} catch (e) {
+		console.log(e);
+		return false;
+	}
+}
+
+
+const get_last = arr=>arr[arr.length-1];
