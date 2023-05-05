@@ -1,11 +1,8 @@
 """Main app"""
-
-import math
 import logging
-from datetime import datetime, time as Time, timedelta
+from datetime import datetime, timedelta
 from bson.objectid import ObjectId
 from bson.json_util import dumps, loads
-import pytz
 
 import uvicorn
 from fastapi import FastAPI, Request, Body
@@ -14,7 +11,9 @@ from fastapi.responses import HTMLResponse, JSONResponse, ORJSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
+from sse_starlette.sse import EventSourceResponse
 from db import DATABASE, mongo_db, mongo_client
+from stock import get_ticker_data2, get_datetime, TIMES, TICKERS, stream_ticker
 
 load_dotenv()
 
@@ -36,85 +35,11 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-TIMES = {
-	'ET': '-0400',
-	'EST': '-0500',
-	'MARKET_OPEN_TIME': '09:30:00',
-	'MARKET_CLOSE_TIME': '16:00:00'
-}
-
-TICKERS = ['BAC', 'WFC', 'WAL', 'PACW', 'SCHW', 'ZION', 'KEY', 'JPM']
-TICKERS.sort()
-
-
-async def get_ticker_data(tickers: list, begin: datetime, end: datetime, prev_volume: float = 0) -> list:
-	if begin is None or end is None:
-		return []
-	conditions = {'datetime': {'$gte': begin, '$lte': end}}
-	data = {}
-	for ticker in tickers:
-		docs = await mongo_db[ticker].find(conditions, {'datetime': 1, 'content.items': {'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1, 'volume': 1}}).sort('datetime', 1).to_list(length=50000)
-		data[ticker] = {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0}
-		for doc in docs:
-			items = doc['content']['items']
-			if len(items) == 0:
-				continue
-			item = items[0]
-			if item['bid'] == '':
-				continue
-			et = item['time'].split(' ')[2]
-			time = doc['datetime'] + timedelta(hours=int(int(TIMES[et])/100))
-			volume = float(item['volume'])
-			if (volume > prev_volume):
-				data[ticker]['times'].append(time.strftime('%H:%M:%S'))
-				data[ticker]['bids'].append(float(item['bid']))
-				data[ticker]['asks'].append(float(item['ask']))
-				data[ticker]['lasts'].append(float(item['last']))
-				data[ticker]['volumes'].append(volume)
-				prev_volume = volume
-				try:
-					data[ticker]['low'] = float(item['low'])
-					data[ticker]['high'] = float(item['high'])
-				except:
-					pass
-	return data
-
-
-async def get_ticker_data2(tickers: list, begin: datetime, end: datetime, prev_volume: float = 0) -> list:
-	if begin is None or end is None:
-		return []
-	conditions = {'datetime': {'$gte': begin, '$lte': end}}
-	data = {}
-	for ticker in tickers:
-		docs = await mongo_client['stockstats2'][ticker].find(conditions, {'datetime': 1, 'content': {'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1, 'volume': 1}}).sort('datetime', 1).to_list(length=50000)
-		data[ticker] = {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0}
-		for doc in docs:
-			item = doc['content']
-			if item['bid'] == '':
-				continue
-			et = item['time'].split(' ')[2]
-			time = doc['datetime'] + timedelta(hours=int(int(TIMES[et])/100))
-			volume = float(item['volume'])
-			if (volume > prev_volume):
-				data[ticker]['times'].append(time.strftime('%H:%M:%S'))
-				data[ticker]['bids'].append(float(item['bid']))
-				data[ticker]['asks'].append(float(item['ask']))
-				data[ticker]['lasts'].append(float(item['last']))
-				data[ticker]['volumes'].append(volume)
-				prev_volume = volume
-				try:
-					data[ticker]['low'] = float(item['low'])
-					data[ticker]['high'] = float(item['high'])
-				except:
-					pass
-	return data
 
 
 
@@ -123,28 +48,17 @@ async def read_root(request: Request):
 	return ''
 
 
-def get_datetime(date: str = None) -> dict:
-	utcdt = datetime.now(tz=pytz.utc).replace(tzinfo=None) #- timedelta(1)
-	nydt = datetime.now(tz=pytz.timezone('America/New_York')).replace(tzinfo=None) #- timedelta(1)
-	diff = (utcdt - nydt).seconds
-	offset_hrs = math.ceil(diff / 3600)
-	if date is not None:
-		begin = datetime.strptime(date, '%Y-%m-%d')
-	else:
-		begin = datetime.combine(utcdt, Time.min)
-	end = begin + timedelta(1)
-	return {"begin": begin, "end": end, "offset_hrs": offset_hrs, "utcdt": utcdt, "nydt": nydt}
-
-
-@app.get("/{ticker}")
-async def ticker_data(request: Request,
-		      ticker: str = None,
-			  bm: int|str = None,
-			  date: str = None,
-			  from_time: int|str = None,
-			  to_time: int|str = None,
-			  prev_volume: float = 0,
-			  prev: int = 0):
+@app.get("/q/{ticker}")
+async def get_quote_ticker(
+		request: Request,
+		ticker: str = None,
+		bm: int|str = None,
+		date: str = None,
+		from_time: int|str = None,
+		to_time: int|str = None,
+		prev_volume: float = 0,
+		is_stream: bool = False,
+	):
 	dt = get_datetime(date)
 	if type(to_time) is int and to_time > 0:
 		dt['end'] =  dt['begin'] + timedelta(hours = to_time + dt['offset_hrs'])
@@ -177,15 +91,18 @@ async def ticker_data(request: Request,
 		if k not in data:
 			data[k] = {}
 
+	if is_stream:
+		return data
+	
 	if request.headers.get('Content-Type') == 'application/json':
 		return ORJSONResponse(data, status_code=200)
-	else:
-		html = templates.get_template('tickers.html').render({"request": request, "data": data, "ticker": ticker, "date": date, "from_time": from_time, "to_time": to_time})
-		return HTMLResponse(content=html, status_code=200)
+	
+	html = templates.get_template('tickers.html').render({"request": request, "data": data, "ticker": ticker, "date": date, "from_time": from_time, "to_time": to_time})
+	return HTMLResponse(content=html, status_code=200)
 
 
-@app.post("/quotes", response_class=JSONResponse)
-async def insert_ticker_data(request: Request, data = Body()) -> ObjectId | None:
+@app.post("/qs", response_class=JSONResponse)
+async def post_qs(request: Request, data = Body()) -> ObjectId | None:
 	dt = data['timestamp']
 	if 'EST' in dt:
 		dt = dt.replace('EST', TIMES['EST'])
@@ -205,8 +122,8 @@ async def insert_ticker_data(request: Request, data = Body()) -> ObjectId | None
 	return tickers
 
 
-@app.post("/{ticker}", response_class=JSONResponse)
-async def insert_ticker_data(request: Request, ticker: str, data = Body()) -> ObjectId | None:
+@app.post("/q/{ticker}", response_class=JSONResponse)
+async def post_q_ticker(request: Request, ticker: str, data = Body()) -> ObjectId | None:
 	dt = data['timestamp']
 	if 'EST' in dt:
 		dt = dt.replace('EST', TIMES['EST'])
@@ -218,6 +135,11 @@ async def insert_ticker_data(request: Request, ticker: str, data = Body()) -> Ob
 	res = await mongo_db[ticker].insert_one(data)
 	return {"id": str(res.inserted_id), 'dt': data['datetime'].strftime('%H:%M:%S')}
 
+
+@app.get("/s/{ticker}")
+async def get_stream_ticker(request: Request, ticker: str, from_time: str = '', prev_volume: float = 0):
+	data = await get_quote_ticker(request, ticker, None, None, from_time, None, prev_volume, True)
+	return EventSourceResponse( stream_ticker(request, data, 10) )
 
 
 if __name__ == "__main__":

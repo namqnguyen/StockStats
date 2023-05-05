@@ -1,13 +1,14 @@
-let IDX = 0;
+let dLen = dataObj['times'].length
+let IDX = (dLen > 15*60) ? dLen - 15*60 : 0; 
 
 const getNewTickerData = async (url) => {
 	try {
 		const response = await fetch(url, {
-		"headers": {
-			"accept": "*/*",
-			"content-type": "application/json",
-		},
-		"method": "GET"
+			"headers": {
+				"accept": "*/*",
+				"content-type": "application/json",
+			},
+			"method": "GET"
 		});
 		return await response.json();
 	} catch (e) {
@@ -278,4 +279,4 @@ let PriceChartPlugins = [];
 PriceChartPlugins.push(...getPluginsByIDs(['customChartLegend']));
 
 const ctx = document.getElementById(ticker);
-let stockChart = new Chart(ctx, getChartConfig('line', getChartData(dataObj), chartOptions, PriceChartPlugins));
+let stockChart = new Chart(ctx, getChartConfig('line', getChartData( getDataFromIndex(IDX) ), chartOptions, PriceChartPlugins));

@@ -8,7 +8,7 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
 		<script>
 			function doFilter() {
-				window.location.href = '/q/{{ticker}}?date=' + $("#date").val() + '&from_time=' + $("#from_time").val() + '&to_time=' + $("#to_time").val();
+				window.location.href = '/{{ticker}}?date=' + $("#date").val() + '&from_time=' + $("#from_time").val() + '&to_time=' + $("#to_time").val();
 			}
 
 		</script>
@@ -157,6 +157,14 @@
 				updateChartsWithNewData();
 			}
 		}
+
+		//runUpdateInterval();
+
+		// let S = (seconds) => {
+ 		// 	createIframeRefresher('tickerRefresher', 'runUpdateInterval', seconds);
+		// }
+
+		// S(1);
 
 		setInterval2(runUpdateInterval, 1000);
 

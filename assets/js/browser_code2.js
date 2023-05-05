@@ -45,7 +45,7 @@ let getTickerDataFromTDA = async (tickerStr) => {
 
 
 let saveTickerData = async (json_str) => {
-	const response = await fetch('http://127.0.0.1:5000/quotes', {
+	const response = await fetch('http://127.0.0.1:5000/qs', {
 		method: 'POST',
 		body: json_str,
 		headers: {
@@ -84,7 +84,10 @@ function run() {
 	}
 }
 
-let TICKERS = ['BAC', 'WFC', 'WAL', 'PACW', 'SCHW', 'ZION', 'KEY', 'JPM'];
+let TICKERS = ['BAC', 'WFC', 'WAL', 'PACW', 'SCHW', 'ZION', 'KEY', 'JPM', 'ALLY', 'NTB'];
+let TICKERS2 = ['AAPL', 'AMAT', 'AMZN', 'ASML', 'AXP', 'BABA', 'BX', 'CPT', 'DTC', 'EGP', 'FND', 'INTC', 'JEF', 'KLIC', 'MPTI', 'MPW', 'NU', 'NVDA', 'OXY', 'PARA', 'RH', 'TSLA', 'TSM'];
+let TICKERS3 = ['ARRY', 'CVNA', 'GME', 'LAZR', 'NKE', 'NYCB', 'S'];
+TICKERS = [...TICKERS, ...TICKERS2, ...TICKERS3];
 let P = false;  // 1=pause fetching, 0=do fetching
 let S = (secs) => {
 	clearAllIntervals();

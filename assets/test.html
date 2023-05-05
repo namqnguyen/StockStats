@@ -1,16 +1,27 @@
 <script type="module">
-	import {TickerNotification} from "./js/alarm2.mjs";
-	let allowed = ['bids', 'asks', 'lasts'];
-	let dataObj = {bids: [5]};
-	TickerNotification.askPermission((p)=>{
-		if (p !== 'granted') return;
-		let tickerNotie = new TickerNotification(allowed, dataObj);
-		console.log(tickerNotie);
-		console.log( tickerNotie.create('a', 'bids', '>= 5', 0) );
-		console.log(tickerNotie.getNames());
-		tickerNotie.check();
+	// import {TickerNotification} from "./js/alarm2.mjs";
+	// let allowed = ['bids', 'asks', 'lasts'];
+	// let dataObj = {bids: [5]};
+	// TickerNotification.askPermission((p)=>{
+	// 	if (p !== 'granted') return;
+	// 	let tickerNotie = new TickerNotification(allowed, dataObj);
+	// 	console.log(tickerNotie);
+	// 	console.log( tickerNotie.create('a', 'bids', '>= 5', 0) );
+	// 	console.log(tickerNotie.getNames());
+	// 	tickerNotie.check();
+	// });
+	// //let t2 = TickerNotification.getInstance(allowed, datObj);
+	// console.log('here');
+
+
+	const evtSource = new EventSource("http://127.0.0.1:5000/s/BAC");
+	evtSource.addEventListener( 'update', event => {
+		// Logic to handle status updates
+		console.log(event)
 	});
-	//let t2 = TickerNotification.getInstance(allowed, datObj);
-	console.log('here');
+	evtSource.addEventListener("end", function(event) {
+		console.log('Handling end....')
+		evtSource.close(); 
+	});
 
 </script>

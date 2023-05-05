@@ -128,10 +128,10 @@ let RSIChartOptions = {
 			},
 		},
 		y_volume: {
-			display: false,
+			display: true,
 			beginAtZero: true,
 			min: 0,
-			max: 10000,
+			max: 30000,
 			position: 'right',
 			ticks: {
 				padding: -200,
