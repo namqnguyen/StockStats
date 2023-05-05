@@ -56,7 +56,7 @@ function getChartData(tbal, old = null) {
 				borderWidth: 1,
 				borderColor: 'green',
 				backgroundColor: 'green',
-				hidden: (old != null) ? old.datasets[0].hidden : false,
+				hidden: (old === null || typeof old.datasets[0] === 'undefined' ) ? false : old.datasets[0].hidden,
 			},
 			{
 				label: 'Ask: ' + data.asks[data.asks.length-1].toFixed(2),
@@ -64,7 +64,7 @@ function getChartData(tbal, old = null) {
 				borderWidth: 1,
 				borderColor: 'red',
 				backgroundColor: 'red',
-				hidden: (old != null) ? old.datasets[1].hidden : false,
+				hidden: (old === null || typeof old.datasets[1] === 'undefined' ) ? false : old.datasets[1].hidden,
 			},
 			{
 				label: 'Last: ' + data.lasts[data.lasts.length-1].toFixed(2) + '          ',
@@ -72,7 +72,7 @@ function getChartData(tbal, old = null) {
 				borderWidth: 2,
 				borderColor: '#FFC300',
 				backgroundColor: '#FFC300',
-				hidden: (old != null) ? old.datasets[2].hidden : false,
+				hidden: (old === null || typeof old.datasets[2] === 'undefined' ) ? false : old.datasets[2].hidden,
 			},
 		],
 		text: 'blahblahblah'

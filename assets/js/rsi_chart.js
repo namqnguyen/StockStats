@@ -192,7 +192,7 @@ const getRSIChartData = (RSIdata, old = null) => {
 					borderWidth: 1,
 					borderColor: '#706247',
 					backgroundColor: '#706247',
-					hidden: (old === null) ? false : old.datasets[0].hidden,
+					hidden: (old === null || typeof old.datasets[0] === 'undefined' ) ? false : old.datasets[0].hidden,
 				},
 				//{label: 'overbought', data: overbought, borderWidth: 1, borderColor: 'green'},
 				//{label: 'oversold', data: oversold, borderWidth: 1, borderColor: 'red'},
@@ -202,7 +202,7 @@ const getRSIChartData = (RSIdata, old = null) => {
 					borderWidth: 1,
 					borderColor: '#FFC300',
 					backgroundColor: '#FFC300',
-					hidden: (old != null) ? old.datasets[1].hidden : false,
+					hidden: (old === null || typeof old.datasets[1] === 'undefined' ) ? false : old.datasets[1].hidden,
 				},
 				{
 					label: 'Volume: ' + volData[volData.length - 1] + '          ',
@@ -213,7 +213,7 @@ const getRSIChartData = (RSIdata, old = null) => {
 					backgroundColor: volColor, //'#00ffff',
 					fillColor: volColor,
 					yAxisID: 'y_volume',
-					hidden: (old != null) ? old.datasets[2].hidden : false,
+					hidden: (old === null || typeof old.datasets[2] === 'undefined' ) ? false : old.datasets[2].hidden,
 				},
 			]
 		}
