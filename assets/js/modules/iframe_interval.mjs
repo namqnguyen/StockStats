@@ -3,7 +3,7 @@ class IframeInterval {
 
 	#intervals = {};
 
-	#add (id, func, args) {
+	#add (id, func, ...args) {
 		this.#intervals[id] = ()=>{
 			func(...args);
 		};
@@ -42,7 +42,7 @@ class IframeInterval {
 				return 'ms must be >= 1000';
 			}
 			let id = Date.now();
-			window.IframeInterval.add(id, func, args);
+			window.IframeInterval.add(id, func, ...args);
 			let callback = 'parent.IframeInterval.callFunc("'+id+'")';
 			let iframe = this.createIframe(id, secs, callback);
 			document.body.appendChild(iframe);

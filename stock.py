@@ -132,7 +132,6 @@ async def stream_ticker(request = None, ticker: str = '', from_time: str = '', p
 	while True:
 		if request != None and await request.is_disconnected():
 			break
-		
 		dt = get_datetime(None, from_time, None, None)
 		data = await get_ticker_data2([ticker], dt['begin'], dt['end'], prev_volume)
 		if len(data[ticker]['times']) > 0:
@@ -142,4 +141,38 @@ async def stream_ticker(request = None, ticker: str = '', from_time: str = '', p
 				"data": dumps(data)
 			}
 			prev_volume = data[ticker]['volumes'][-1]
+		# else:
+		# 	yield {
+		# 		"event": "test",
+		# 		"data": ""
+		# 	}
+		await asyncio.sleep( sleep )
+
+
+async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
+	prev_volumes = {}
+	while True:
+		if request != None and await request.is_disconnected():
+			break
+		dt = get_datetime(None, from_time, None, None)
+		data = {}
+		for t in TICKERS:
+			pv = prev_volumes[t] if (t in prev_volumes) else 0
+			tmp = await get_ticker_data2([t], dt['begin'], dt['end'], pv)
+			if len(tmp[t]['times']) > 0:
+				data[t] = tmp[t]
+				prev_volumes[t] = data[t]['volumes'][-1]
+		
+		if len(data.keys()) > 0:
+			yield {
+				"event": "update",
+				"retry": 5000,  # ms
+				"data": dumps(data)
+			}
+		else:
+			yield {
+				"event": "test",
+				"data": ""
+			}
+
 		await asyncio.sleep( sleep )

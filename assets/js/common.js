@@ -51,24 +51,23 @@ var clearAllIntervals = () => {
 };
 
 
-
-const runAtSpecificTimeOfDay = (hour, minutes, runOnce, func) => {
+const runAtSpecificTimeOfDay = (hour, minutes, runOnce, func, ...args) => {
 	const twentyFourHours = 86400000;
 	const now = new Date();
 	let eta_ms = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minutes, 0, 0).getTime() - now;
 	if (eta_ms < 0) {
 		// eta_ms += twentyFourHours;
 		if (runOnce) {
-		func();
+			func(...args);
 		}
 	}
-	setTimeout( func, eta_ms );
+	setTimeout( ()=>{func(...args)}, eta_ms );
 }
 
 
 const exists = (what) => {
 	try {
-		let tmp = eval(what);
+		let tmp = eval('({'+what+'})');
 		return (typeof tmp !== 'undefined' && tmp !== null);
 	} catch (e) {
 		console.log(e);
@@ -78,3 +77,20 @@ const exists = (what) => {
 
 
 const get_last = arr=>arr[arr.length-1];
+
+
+const fetchJSON = async (url, body = null, method = 'GET') => {
+	try {
+		const response = await fetch(url, {
+			"headers": {
+				"accept": "*/*",
+				"content-type": "application/json",
+			},
+			"body": body,
+			"method": method,
+		});
+		return await response.json();
+	} catch (e) {
+		return {error: e};
+	}
+}

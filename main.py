@@ -13,11 +13,11 @@ from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 from sse_starlette.sse import EventSourceResponse
 from db import DATABASE, mongo_db, mongo_client
-from stock import get_ticker_data2, get_datetime, TIMES, TICKERS, stream_ticker
+from stock import get_ticker_data2, get_datetime, TIMES, TICKERS, stream_ticker, stream_tickers
 
 load_dotenv()
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.CRITICAL)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 ld = logging.critical
 
 app = FastAPI()
@@ -105,6 +105,11 @@ async def post_q_ticker(request: Request, ticker: str, data = Body()) -> ObjectI
 
 	res = await mongo_db[ticker].insert_one(data)
 	return {"id": str(res.inserted_id), 'dt': data['datetime'].strftime('%H:%M:%S')}
+
+
+@app.get("/s/tickers")
+async def get_stream_ticker(request: Request, from_time: str = '',):
+	return EventSourceResponse( stream_tickers(request, from_time) )
 
 
 @app.get("/s/{ticker}")
