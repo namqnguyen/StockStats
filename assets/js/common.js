@@ -67,7 +67,7 @@ const runAtSpecificTimeOfDay = (hour, minutes, runOnce, func, ...args) => {
 
 const exists = (what) => {
 	try {
-		let tmp = eval('({'+what+'})');
+		let tmp = eval(what);
 		return (typeof tmp !== 'undefined' && tmp !== null);
 	} catch (e) {
 		console.log(e);

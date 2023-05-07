@@ -17,7 +17,7 @@ from stock import get_ticker_data2, get_datetime, TIMES, TICKERS, stream_ticker,
 
 load_dotenv()
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.CRITICAL)
 ld = logging.critical
 
 app = FastAPI()

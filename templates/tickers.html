@@ -95,7 +95,16 @@
 
 	</script>
 	<script type="module">
-		import {TickerNotification} from "/assets/js/alarm2.mjs";
+		import { TickerNotification } from "/assets/js/alarm2.mjs";
+		import { TickerManager } from "/assets/js/modules/ticker_manager.mjs";
+
+		let TM = new TickerManager();
+		var tmp = {};
+		for (const [ticker, obj] of Object.entries(GL.tickers)) {
+			tmp[ticker] = obj.data;
+		}
+		TM.setTickerData(tmp);
+
 		let allowed = ['bids', 'asks', 'lasts'];
 		TickerNotification.askPermission((p)=>{
 			if (p !== 'granted') {

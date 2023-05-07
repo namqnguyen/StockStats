@@ -9,12 +9,25 @@ class TickerManager {
 	}
 
 
+	#getDataStub () {
+		return {
+			"times": [],
+			"bids": [],
+			"asks": [],
+			"lasts": [],
+			"volumes": [],
+			"low": 0,
+			"high": 0,
+		}
+	}
+
+
 	add (tickers = []) {
 		if (!Array.isArray(tickers)) return;
 		let td = this.#tickerData;
 		tickers.forEach(t => {
 			if (typeof t === 'string' && !(t in td) ) {
-				td[t] = {};
+				td[t] = this.#getDataStub();
 			}
 		});
 	}
@@ -42,6 +55,11 @@ class TickerManager {
 			}
 		});
 		return data;
+	}
+
+
+	setTickerData (data) {
+		this.#tickerData = data;
 	}
 
 

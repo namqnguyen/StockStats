@@ -149,26 +149,80 @@ async def stream_ticker(request = None, ticker: str = '', from_time: str = '', p
 		await asyncio.sleep( sleep )
 
 
+
+async def get_ticker_data3(tickers: list, begin: datetime, end: datetime, last_data: dict) -> list:
+	if begin is None or end is None:
+		return []
+	conditions = {'datetime': {'$gte': begin, '$lte': end}}
+	data = {}
+	pipeline = []
+	for ticker in tickers:
+		pipeline.append( {'$unionWith': {'coll': ticker}} )
+
+	pipeline.extend([
+		{'$match': conditions},
+		{'$project': {
+			'datetime': 1,
+			'content': {
+				'symbol': 1, 'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1, 'volume': 1
+			}}},
+		{'$sort': {'datetime': 1}},
+		{'$limit': 5000}
+	])
+
+	docs = await mongo_client['stockstats2']['empty__'].aggregate(pipeline).to_list(length=5000)
+
+	for doc in docs:
+		item = doc['content']
+		if item['bid'] == '':
+			continue
+		ticker = item['symbol']
+		prev_volume = 0
+		if last_data is not None and ticker in last_data:
+			prev_volume = last_data[ticker]['volume']
+		volume = float(item['volume'])
+		if (volume > prev_volume):  # only want movement of the stock
+			if ticker not in data:
+				data[ticker] = {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0}
+			td = data[ticker]
+			et = item['time'].split(' ')[2]
+			time = doc['datetime'] + timedelta(hours=int(int(TIMES[et])/100))
+			td['times'].append(time.strftime('%H:%M:%S'))
+			td['bids'].append(float(item['bid']))
+			td['asks'].append(float(item['ask']))
+			td['lasts'].append(float(item['last']))
+			td['volumes'].append(volume)
+			try:
+				td['low'] = float(item['low'])
+				td['high'] = float(item['high'])
+			except:
+				pass
+
+	return data
+
 async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
-	prev_volumes = {}
+	last_data = {}
 	while True:
 		if request != None and await request.is_disconnected():
 			break
-		dt = get_datetime(None, from_time, None, None)
-		data = {}
-		for t in TICKERS:
-			pv = prev_volumes[t] if (t in prev_volumes) else 0
-			tmp = await get_ticker_data2([t], dt['begin'], dt['end'], pv)
-			if len(tmp[t]['times']) > 0:
-				data[t] = tmp[t]
-				prev_volumes[t] = data[t]['volumes'][-1]
+
+		if len(last_data) > 0:
+			ticker = list(last_data.keys())[0]
+			from_time = last_data[ticker]['time']
 		
-		if len(data.keys()) > 0:
+		dt = get_datetime(None, from_time, None, None)
+		dt['begin'] = dt['begin'] - timedelta(3)
+		data = await get_ticker_data3(TICKERS, dt['begin'], dt['end'], last_data)
+		
+		if len( data ) > 0:
 			yield {
 				"event": "update",
 				"retry": 5000,  # ms
 				"data": dumps(data),
 			}
+			for ticker in data:
+				td = data[ticker]
+				last_data[ticker] = {'time': td['times'][-1], 'volume': td['volumes'][-1]}
 		else:
 			data = {
 				'BAC': {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0},
