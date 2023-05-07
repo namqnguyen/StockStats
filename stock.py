@@ -167,12 +167,16 @@ async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
 			yield {
 				"event": "update",
 				"retry": 5000,  # ms
-				"data": dumps(data)
+				"data": dumps(data),
 			}
 		else:
+			data = {
+				'BAC': {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0},
+	     		'WFC': {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0},
+			}
 			yield {
 				"event": "test",
-				"data": ""
+				"data": dumps(data),
 			}
 
 		await asyncio.sleep( sleep )

@@ -4,7 +4,6 @@ class TickerManager {
 	#tickerData = {};
 	#streamer = null;
 
-
 	constructor (tickers = []) {
 		this.add(tickers);
 	}
@@ -12,11 +11,11 @@ class TickerManager {
 
 	add (tickers = []) {
 		if (!Array.isArray(tickers)) return;
+		let td = this.#tickerData;
 		tickers.forEach(t => {
-			if (typeof t !== 'string' || (t in this.#tickerData) ) {
-				return;
+			if (typeof t === 'string' && !(t in td) ) {
+				td[t] = {};
 			}
-			this.#tickerData[t] = {};
 		});
 	}
 
@@ -31,14 +30,15 @@ class TickerManager {
 	}
 
 
-	getTickerData (tickers = null) {
-		if ( tickers === null || Object.keys(this.#tickerData).length == 0 ) {
-			return this.#tickerData;
+	getTickerData (tickers = null) {  // array of tickers
+		let td = this.#tickerData;
+		if ( tickers === null || Object.keys(td).length == 0 ) {
+			return td;
 		}
 		let data = {};
 		tickers.forEach(t => {
-			if (t in this.#tickerData) {
-				data[t] = this.#tickerData[t];
+			if (t in td) {
+				data[t] = td[t];
 			}
 		});
 		return data;
@@ -49,60 +49,45 @@ class TickerManager {
 		const def = null;
 		const tickers = this.getTickers();
 		if (tickers.length > 0 ) {
-			const data = this.getTickerData([ tickers[0] ]);
-			if ( !('times' in data ) ) return def;
-			const times = get_last( data.times );
-			if (times.length > 0) {
-				return times[0];
-			}
+			const td = this.#tickerData[ tickers[0] ];
+			return ('times' in td && td.times.length > 0) ?  td.times[0]  :  def
 		}
 		return def;
 	}
 
 
 	#addData (data = {}) {
-		for (const [ticker, tbalv] of Object.entries(data)) {
+		for (const [ticker, tbalv] of Object.entries(data)) { // tbalv: times, bids, asks, lasts, volumes
 			if ( !(ticker in this.#tickerData) ) continue;
-			for (const [k, arr] of Object.entries( tbalv )) {  // k = times, bids, asks, lasts, volumes
-				this.#tickerData[ticker][k].push(...arr);
+			let td = this.#tickerData[ticker];
+			for (const [k, v] of Object.entries( tbalv )) {
+				if (Array.isArray(v) && v.length > 0) {
+					(k in td) ?  td[k].push(...v)  :  td[k] = v;
+				} else {
+					td[k] = v;
+				}
 			}
 		}
 	}
 
 
-	startStream () {
+	#getUrl () {
 		const end = this.#getEndTime();
 		const from_time = (end === null) ? '' : `from_time=${end}`;
-		let url = `/s/tickers?${from_time}`;
-		this.#streamer = new StreamClient(url, (e)=>{console.log(e)});
-		this.#streamer.addEventListener("update", ev=>{
-			this.#addData( JSON.parse(ev.data) );
-		});
+		return `/s/tickers?${from_time}`;
 	}
 
 
-
-	// startStream (func) {
-	// 	const end = this.#getEndTime();
-	// 	const from_time = end === null ? '' : `&from_time=${end}`;
-	// 	let url = `/s/tickers?1=1${from_time}`;
-	// 	this.#evtSource = new EventSource(url);
-	// 	this.#evtSource.addEventListener("update", ev=>{
-	// 		try {
-	// 			func( JSON.parse(ev.data) );
-	// 		} catch (er) {
-	// 			console.log(er);
-	// 		}
-	// 	});
-	// 	this.#evtSource.addEventListener("end", ev=>{
-	// 		try {
-	// 			func( JSON.parse(ev) );
-	// 		} catch (er) {
-	// 			console.log(er);
-	// 		}
-	// 		this.#evtSource.close();
-	// 	});
-	// }
+	startStream (url = this.#getUrl()) {
+		this.#streamer = new StreamClient(url, (e)=>{console.log(e)});
+		this.#streamer.addEventListener("test", ev=>{
+			try {
+				this.#addData( JSON.parse(ev.data) );
+			} catch(er) {
+				console.log(er);
+			}
+		});
+	}
 
 
 	stopStream () {
