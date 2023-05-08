@@ -9,11 +9,12 @@ from fastapi import FastAPI, Request, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse, ORJSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 from sse_starlette.sse import EventSourceResponse
 from db import DATABASE, mongo_db, mongo_client
-from stock import get_ticker_data2, get_datetime, TIMES, TICKERS, stream_ticker, stream_tickers
+from stock import get_ticker_data2, get_ticker_data3, get_datetime, TIMES, TICKERS, stream_ticker, stream_tickers
 
 load_dotenv()
 
@@ -40,12 +41,34 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware)
 
 
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
 	return ''
+
+
+@app.get("/q/tickers/{ticker}")
+async def get_quote_tickers(
+		request: Request,
+		ticker: str = None,
+		date: str = None,
+		from_time: int|str = None,
+		to_time: int|str = None,
+	):
+
+	dt = get_datetime(date, from_time, to_time)
+	# dt['begin'] = dt['begin'] - timedelta(3)  # for testing
+	data = await get_ticker_data3(TICKERS, dt['begin'], dt['end'])
+	# print(len(data['BAC']))
+	
+	if request.headers.get('Content-Type') == 'application/json':
+		return ORJSONResponse(data, status_code=200)
+	
+	html = templates.get_template('tickers2.html').render({"request": request, "ticker": ticker,  "data": data, "date": date, "from_time": from_time, "to_time": to_time})
+	return HTMLResponse(content=html, status_code=200)
 
 
 @app.get("/q/{ticker}")

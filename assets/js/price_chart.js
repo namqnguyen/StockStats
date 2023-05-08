@@ -1,4 +1,4 @@
-let dLen = GL.cur_data().times.length
+let dLen = (Object.keys(GL.cur_data()).length > 0 ) ? GL.cur_data().times.length : 0
 let IDX = (dLen > 15*60) ? dLen - 15*60 : 0; 
 
 const getNewTickerData = async (url) => {
@@ -22,7 +22,12 @@ function getDataFromIndex(idx) {
 	if ( !exists(idx) ) {
 		idx = 0;
 	}
+
 	let data = GL.cur_data();
+	if (data.times.length == 0) {
+		return data;
+	}
+
 	return {
 		times: data.times.slice(idx),
 		bids: data.bids.slice(idx),
@@ -212,6 +217,27 @@ const updateChartsWithNewData = async (newData, updateChart = true) => {
 			rsiChart.update();
 		}
 	}
+}
+
+
+const updateCharts = () => {
+	let data = GL.cur_data();
+	// send notifications
+	if (exists('window.tickerNotie')) {
+		tickerNotie.check();
+	}
+
+	$('#low').text().replace(data.low)
+	$('#high').text().replace(data.high)
+
+	let priceData = getDataFromIndex(IDX);
+	stockChart.data = getChartData(priceData, stockChart.data);
+	stockChart.update();
+
+	// RSI data and chart
+	let RSIarr = calculateRSI(RSI_PERIODS, priceData.lasts);
+	rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
+	rsiChart.update();
 }
 
 

@@ -1,3 +1,4 @@
+
 <html background>
 	<head>
 		<!-- <meta http-equiv="refresh" content="1" /> -->
@@ -47,8 +48,8 @@
 				<button type="button" id="range_button" onclick="doFilter()">Select</button>
 				| <input type="text" id="skipInterval" value="" size="2" /> <button id="resetInterval">res</button>
 				<span id="timesContainer"></span>
-				| <span id="low" style="color:red">Low: {{data[ticker]['low']}}</span>
-				| <span id="high" style="color: green">High: {{data[ticker]['high']}}</span>
+				| <span id="low" style="color:red">Low: 0</span>
+				| <span id="high" style="color: green">High: 0</span>
 				| <button id="streamSwitch">Stream OFF</button>
 			</h2>
 
@@ -91,8 +92,23 @@
 			volume_y_axis_ticks: [100000, 90000, 80000, 70000, 60000, 50000, 40000, 30000, 20000, 10000],
 			mins_back_times: [-1, 0, 180, 120, 90, 60, 45, 30, 20, 15, 10, 5, 2, 1],
 		};
-		GL.cur_data = ()=>GL.tickers[GL.cur_ticker].data;  // no way(?) to reference properties of GL during init
-
+		if ( Object.keys(GL.tickers).length == 0 ) {
+			GL.tickers[GL.cur_ticker] = {'data': {
+				"times": [],
+				"bids": [],
+				"asks": [],
+				"lasts": [],
+				"volumes": [],
+				"low": 0,
+				"high": 0,
+			}}
+		}
+		GL.cur_data = ()=> {
+			if (GL.cur_ticker in GL.tickers && 'data' in GL.tickers[GL.cur_ticker]) {
+				return GL.tickers[GL.cur_ticker].data;
+			}
+			return {};
+		}
 	</script>
 	<script type="module">
 		import { TickerNotification } from "/assets/js/alarm2.mjs";
@@ -127,7 +143,7 @@
 		$('#ticker-select').change( e => {
 			let val = $("#ticker-select option:selected").attr('value');
 			if (val === '') return;
-			window.location = val;
+			GL.cur_ticker = val;
 		})
 
 		$('#skipInterval').blur( (e) => { GL.data_interval = parseInt(e.target.value) } );
@@ -181,11 +197,22 @@
 			});
 		};
 
-		if (evtSource === null || evtSource.readyState === 2) {
-			stream();
-		}
+		// if (evtSource === null || evtSource.readyState === 2) {
+		// 	stream();
+		// }
 
 		//window.addEventListener('beforeunload', e=>evtSource.close() );
 
+	</script>
+	<script type="module">
+		import { TickerManager } from "/assets/js/modules/ticker_manager.mjs";
+
+		let TM = new TickerManager();
+		var tmp = {};
+		for (const [ticker, obj] of Object.entries(GL.tickers)) {
+			tmp[ticker] = obj.data;
+		}
+		TM.setTickerData(tmp);
+		TM.startStream();
 	</script>
 </html>

@@ -149,8 +149,11 @@ async def stream_ticker(request = None, ticker: str = '', from_time: str = '', p
 		await asyncio.sleep( sleep )
 
 
+def get_stub_data () -> dict:
+	return {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0}
 
-async def get_ticker_data3(tickers: list, begin: datetime, end: datetime, last_data: dict) -> list:
+
+async def get_ticker_data3(tickers: list, begin: datetime, end: datetime, last_data: dict = None) -> list:
 	if begin is None or end is None:
 		return []
 	conditions = {'datetime': {'$gte': begin, '$lte': end}}
@@ -159,6 +162,7 @@ async def get_ticker_data3(tickers: list, begin: datetime, end: datetime, last_d
 	for ticker in tickers:
 		pipeline.append( {'$unionWith': {'coll': ticker}} )
 
+	limit = 5000000
 	pipeline.extend([
 		{'$match': conditions},
 		{'$project': {
@@ -167,10 +171,10 @@ async def get_ticker_data3(tickers: list, begin: datetime, end: datetime, last_d
 				'symbol': 1, 'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1, 'volume': 1
 			}}},
 		{'$sort': {'datetime': 1}},
-		{'$limit': 5000}
+		# {'$limit': limit}
 	])
 
-	docs = await mongo_client['stockstats2']['empty__'].aggregate(pipeline).to_list(length=5000)
+	docs = await mongo_client['stockstats2']['empty__'].aggregate(pipeline).to_list(length=limit)
 
 	for doc in docs:
 		item = doc['content']
@@ -183,7 +187,7 @@ async def get_ticker_data3(tickers: list, begin: datetime, end: datetime, last_d
 		volume = float(item['volume'])
 		if (volume > prev_volume):  # only want movement of the stock
 			if ticker not in data:
-				data[ticker] = {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0}
+				data[ticker] = get_stub_data()
 			td = data[ticker]
 			et = item['time'].split(' ')[2]
 			time = doc['datetime'] + timedelta(hours=int(int(TIMES[et])/100))
@@ -200,7 +204,7 @@ async def get_ticker_data3(tickers: list, begin: datetime, end: datetime, last_d
 
 	return data
 
-async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
+async def stream_tickers(request = None, from_time: str = '', sleep: int = 10):
 	last_data = {}
 	while True:
 		if request != None and await request.is_disconnected():
@@ -211,7 +215,7 @@ async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
 			from_time = last_data[ticker]['time']
 		
 		dt = get_datetime(None, from_time, None, None)
-		dt['begin'] = dt['begin'] - timedelta(3)
+		dt['begin'] = dt['begin'] - timedelta(3)  # for testing
 		data = await get_ticker_data3(TICKERS, dt['begin'], dt['end'], last_data)
 		
 		if len( data ) > 0:

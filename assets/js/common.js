@@ -76,9 +76,6 @@ const exists = (what) => {
 }
 
 
-const get_last = arr=>arr[arr.length-1];
-
-
 const fetchJSON = async (url, body = null, method = 'GET') => {
 	try {
 		const response = await fetch(url, {

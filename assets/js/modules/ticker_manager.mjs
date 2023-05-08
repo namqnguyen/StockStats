@@ -9,7 +9,7 @@ class TickerManager {
 	}
 
 
-	#getDataStub () {
+	static getDataStub () {
 		return {
 			"times": [],
 			"bids": [],
@@ -27,7 +27,7 @@ class TickerManager {
 		let td = this.#tickerData;
 		tickers.forEach(t => {
 			if (typeof t === 'string' && !(t in td) ) {
-				td[t] = this.#getDataStub();
+				td[t] = this.getDataStub();
 			}
 		});
 	}
@@ -68,7 +68,7 @@ class TickerManager {
 		const tickers = this.getTickers();
 		if (tickers.length > 0 ) {
 			const td = this.#tickerData[ tickers[0] ];
-			return ('times' in td && td.times.length > 0) ?  td.times[0]  :  def
+			return ('times' in td && td.times.length > 0) ?  td.times.slice(-1)  :  def
 		}
 		return def;
 	}
@@ -98,13 +98,18 @@ class TickerManager {
 
 	startStream (url = this.#getUrl()) {
 		this.#streamer = new StreamClient(url, (e)=>{console.log(e)});
-		this.#streamer.addEventListener("test", ev=>{
+		this.#streamer.addEventListener("update", ev=>{
 			try {
 				this.#addData( JSON.parse(ev.data) );
+				updateCharts( JSON.parse(ev.data) );
 			} catch(er) {
 				console.log(er);
 			}
 		});
+		this.#streamer.onerror = (er) => {
+			this.#streamer.close();
+			setTimeout(()=>{this.startStream()}, 5000);
+		};
 	}
 
 
