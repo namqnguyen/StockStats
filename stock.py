@@ -204,7 +204,7 @@ async def get_ticker_data3(tickers: list, begin: datetime, end: datetime, last_d
 
 	return data
 
-async def stream_tickers(request = None, from_time: str = '', sleep: int = 10):
+async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
 	last_data = {}
 	while True:
 		if request != None and await request.is_disconnected():
@@ -215,7 +215,7 @@ async def stream_tickers(request = None, from_time: str = '', sleep: int = 10):
 			from_time = last_data[ticker]['time']
 		
 		dt = get_datetime(None, from_time, None, None)
-		dt['begin'] = dt['begin'] - timedelta(3)  # for testing
+		# dt['begin'] = dt['begin'] - timedelta(3)  # for testing
 		data = await get_ticker_data3(TICKERS, dt['begin'], dt['end'], last_data)
 		
 		if len( data ) > 0:
@@ -227,14 +227,14 @@ async def stream_tickers(request = None, from_time: str = '', sleep: int = 10):
 			for ticker in data:
 				td = data[ticker]
 				last_data[ticker] = {'time': td['times'][-1], 'volume': td['volumes'][-1]}
-		else:
-			data = {
-				'BAC': {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0},
-	     		'WFC': {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0},
-			}
-			yield {
-				"event": "test",
-				"data": dumps(data),
-			}
+		# else:
+		# 	data = {
+		# 		'BAC': {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0},
+	    #  		'WFC': {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0},
+		# 	}
+		# 	yield {
+		# 		"event": "test",
+		# 		"data": dumps(data),
+		# 	}
 
 		await asyncio.sleep( sleep )

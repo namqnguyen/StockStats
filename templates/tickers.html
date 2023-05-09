@@ -103,7 +103,7 @@
 				console.log('Permission is: ' + p);
 				return;
 			}
-			window.tickerNotie = new TickerNotification(allowed, GL.cur_data());
+			window.TN = new TickerNotification(allowed, GL.cur_data());
 		});
 	</script>
 	<script src="/assets/js/alarm.js"></script>
@@ -167,10 +167,10 @@
 		let stream = () => {
 			let times = GL.cur_data().times;
 			let volumes = GL.cur_data().volumes;
-			let end = (times.length > 0) ? times.slice(-1) : [0,0,0];
+			let end = (times.length > 0) ? times.slice(-1)[0] : '00:00:00';
 			let begin = (times.length > 0) ? end.split(':') : [0,0,0];
 			begin[2] = (times.length > 0) ? parseInt(begin[2]) + 1 : begin[2];  // want 1 second more
-			prev_volume = (volumes.length > 0) ? volumes.slice(-1) : 0;
+			prev_volume = (volumes.length > 0) ? volumes.slice(-1)[0] : 0;
 			let url = '/s/'+ GL.cur_ticker + '?prev_volume=' + prev_volume + '&from_time=' + begin.join(':');
 			evtSource = new EventSource(url);
 			evtSource.addEventListener("update", e => {

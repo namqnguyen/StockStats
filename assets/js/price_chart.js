@@ -1,5 +1,5 @@
 let dLen = (Object.keys(GL.cur_data()).length > 0 ) ? GL.cur_data().times.length : 0
-let IDX = (dLen > 15*60) ? dLen - 15*60 : 0; 
+GL.IDX = (dLen > 15*60) ? dLen - 15*60 : 0; 
 
 const getNewTickerData = async (url) => {
 	try {
@@ -43,7 +43,7 @@ function getChartData(tbal, old = null) {
 	}
 	let data = tbal;
 	if (GL.data_interval > 1) {
-		data = {times: [], bids: [], asks: [], lasts: []};
+		data = {times: [], bids: [], asks: [], lasts: [], volumes: []};
 		for (const [k, v] of Object.entries(tbal)) {
 			for (const [i, n] of v.entries()) {
 				if (i % GL.data_interval == 0) {
@@ -191,8 +191,8 @@ const updateChartsWithNewData = async (newData, updateChart = true) => {
 	if (newd.times.length > 0) {
 		let data = GL.cur_data();
 		// send notifications
-		if (exists('window.tickerNotie')) {
-			tickerNotie.check();
+		if (exists('window.TN')) {
+			window.TN.check();
 		}
 		// ticker price data
 		for (const [k, v] of Object.entries(data)) {
@@ -207,7 +207,7 @@ const updateChartsWithNewData = async (newData, updateChart = true) => {
 			$('#low').text().replace(data.low)
 			$('#high').text().replace(data.high)
 
-			let priceData = getDataFromIndex(IDX);
+			let priceData = getDataFromIndex(GL.IDX);
 			stockChart.data = getChartData(priceData, stockChart.data);
 			stockChart.update();
 
@@ -221,16 +221,18 @@ const updateChartsWithNewData = async (newData, updateChart = true) => {
 
 
 const updateCharts = () => {
+	if (GL.P) return;
+	GL.P = true;  // turn off potential multiple updates (from SSE)
 	let data = GL.cur_data();
 	// send notifications
-	if (exists('window.tickerNotie')) {
-		tickerNotie.check();
+	if (exists('window.TN')) {
+		window.TN.check();
 	}
 
 	$('#low').text().replace(data.low)
 	$('#high').text().replace(data.high)
 
-	let priceData = getDataFromIndex(IDX);
+	let priceData = getDataFromIndex(GL.IDX);
 	stockChart.data = getChartData(priceData, stockChart.data);
 	stockChart.update();
 
@@ -238,6 +240,41 @@ const updateCharts = () => {
 	let RSIarr = calculateRSI(RSI_PERIODS, priceData.lasts);
 	rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
 	rsiChart.update();
+	GL.P = false;  // turn back on
+}
+
+
+function showChartMinsBack2(minsBack) {
+	let times = GL.cur_data()['times'];
+	if (times.length ==0 ) return;
+	let last = times.slice(-1)[0];
+	let hms = last.split(':');
+	let hrs = parseInt(hms[0])
+	let mins = parseInt(hms[1]);
+	let secs = parseInt(hms[2]);
+	let openSince = 9*60 + 30;   // Open time, 9:30 AM Eastern
+	const oldIDX = GL.IDX;
+
+	if ( minsBack === 0 && hrs*60 + mins >= openSince) {
+		minsBack = hrs*60 + mins - openSince;
+	}
+	if (minsBack > 0) {
+		let backAsSeconds = (hrs*60 + mins - minsBack)*60 + secs;
+		for (const [i, value] of times.entries()) {
+			let time = value.split(':');
+			let asSecs = parseInt(time[0])*3600 + parseInt(time[1]*60) + parseInt(time[2]);
+			if (asSecs > backAsSeconds) {
+				GL.IDX = i;
+				break;
+			}
+		}
+	}
+	if (minsBack == -1) {
+		GL.IDX = 0;
+	}
+	if (GL.IDX !== oldIDX) {
+		updateCharts();
+	}
 }
 
 
@@ -249,7 +286,7 @@ function showChartMinsBack(minsBack) {
 	let mins = parseInt(hms[1]);
 	let secs = parseInt(hms[2]);
 	let openSince = 9*60 + 30;   // Open time, 9:30 AM Eastern
-	const oldIDX = IDX;
+	const oldIDX = GL.IDX;
 
 	if ( minsBack === 0 && hrs*60 + mins >= openSince) {
 		minsBack = hrs*60 + mins - openSince;
@@ -261,19 +298,19 @@ function showChartMinsBack(minsBack) {
 			let time = value.split(':');
 			let asSecs = parseInt(time[0])*3600 + parseInt(time[1]*60) + parseInt(time[2]);
 			if (asSecs > backAsSeconds) {
-				IDX = i;
+				GL.IDX = i;
 				break;
 			}
 		}
 	}
-	if (IDX !== oldIDX) {
-		let priceData = getDataFromIndex(IDX);
+	if (GL.IDX !== oldIDX) {
+		let priceData = getDataFromIndex(GL.IDX);
 		stockChart.data = getChartData(priceData, stockChart.data);
 		stockChart.update();
 		// stockChart.destroy();
 		//stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
 
-		let RSIarr = calculateRSI(RSI_PERIODS, data.lasts.slice(IDX));
+		let RSIarr = calculateRSI(RSI_PERIODS, data.lasts.slice(GL.IDX));
 		rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
 		rsiChart.update();
 		// rsiChart.destroy();
@@ -299,7 +336,7 @@ function updateBidAskLastLegendPrices(bid, ask, last) {
 }
 
 let PriceChartPlugins = [];
-PriceChartPlugins.push(...getPluginsByIDs(['customChartLegend']));
+PriceChartPlugins.push(...getPluginsByIDs(['customChartLegend', 'doAfterRender']));
 
 const ctx = document.getElementById('price_chart');
-let stockChart = new Chart(ctx, getChartConfig('line', getChartData( getDataFromIndex(IDX) ), chartOptions, PriceChartPlugins));
+let stockChart = new Chart(ctx, getChartConfig('line', getChartData( getDataFromIndex(GL.IDX) ), chartOptions, PriceChartPlugins));

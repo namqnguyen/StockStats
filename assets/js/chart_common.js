@@ -61,7 +61,7 @@ const CHART_PLUGINS = [
 	},
 	{
 		id: 'customChartLegend',
-		afterUpdate(chart, args, options) {
+		afterUpdate: (chart, args, options) => {
 			const ul = getOrCreateLegendList(chart, options.containerID);
 		
 			// Remove old legend items
@@ -116,7 +116,13 @@ const CHART_PLUGINS = [
 				li.appendChild(textContainer);
 				ul.appendChild(li);
 			});
-		}
+		},
+	},
+	{
+		id: 'doAfterRender',
+		afterRender: (chart, args, options) => {
+			
+		},
 	},
 	// {
 	// 	id: 'overlayText',

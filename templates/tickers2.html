@@ -30,6 +30,10 @@
 				padding-right: 50px;
 				/* border: 1px solid green; */
 			}
+
+			.unclickable {
+				color: black;
+			}
 		</style>
 	</head>
 
@@ -48,8 +52,8 @@
 				<button type="button" id="range_button" onclick="doFilter()">Select</button>
 				| <input type="text" id="skipInterval" value="" size="2" /> <button id="resetInterval">res</button>
 				<span id="timesContainer"></span>
-				| <span id="low" style="color:red">Low: 0</span>
-				| <span id="high" style="color: green">High: 0</span>
+				| <span style="color:red">Low: <span id="ticker_low">0</span></span>
+				| <span style="color: green">High: <span id="ticker_high">0</span></span>
 				| <button id="streamSwitch">Stream OFF</button>
 			</h2>
 
@@ -67,6 +71,7 @@
 					<select id="volume-controls">
 						<option value="">Max Y-Axis</option>
 					</select>
+					<span>Total Volume: <span id="total_volume">0</span></span>
 				</div>
 				<div id="RSIchartLegend" class="customChartLegendCSSClass"></div>
 			</div>
@@ -79,7 +84,6 @@
 	<script src="/assets/js/common.js"></script>
 	<script>
 		let GL = {
-			data_interval: 1,
 			tickers: {
 				{% for key in data.keys() %}
 				{{key}}: {
@@ -89,8 +93,13 @@
 				{% endfor %}
 			},
 			cur_ticker: '{{ticker}}',
+			IDX: 0,
 			volume_y_axis_ticks: [100000, 90000, 80000, 70000, 60000, 50000, 40000, 30000, 20000, 10000],
 			mins_back_times: [-1, 0, 180, 120, 90, 60, 45, 30, 20, 15, 10, 5, 2, 1],
+			data_interval: 1,
+			RSI_PERIODS: 14,
+			EXPSMTH_TIMES: 2,
+			P: false,
 		};
 		if ( Object.keys(GL.tickers).length == 0 ) {
 			GL.tickers[GL.cur_ticker] = {'data': {
@@ -103,23 +112,24 @@
 				"high": 0,
 			}}
 		}
-		GL.cur_data = ()=> {
-			if (GL.cur_ticker in GL.tickers && 'data' in GL.tickers[GL.cur_ticker]) {
+		GL.cur_data = ()=>{
+			if ( GL.cur_ticker in GL.tickers && 'data' in GL.tickers[GL.cur_ticker] ) {
 				return GL.tickers[GL.cur_ticker].data;
 			}
 			return {};
 		}
+		window.GL = GL;
 	</script>
 	<script type="module">
 		import { TickerNotification } from "/assets/js/alarm2.mjs";
 
 		let allowed = ['bids', 'asks', 'lasts'];
-		TickerNotification.askPermission((p)=>{
-			if (p !== 'granted') {
-				console.log('Permission is: ' + p);
+		TickerNotification.askPermission((perm)=>{
+			if (perm !== 'granted') {
+				console.log('Permission is: ' + perm);
 				return;
 			}
-			window.tickerNotie = new TickerNotification(allowed, GL.cur_data());
+			window.TN = new TickerNotification(allowed, GL.cur_data());
 		});
 	</script>
 	<script src="/assets/js/alarm.js"></script>
@@ -127,6 +137,11 @@
 	<script src="/assets/js/price_chart.js"></script>
 	<script src="/assets/js/rsi_chart.js"></script>
 	<script>
+
+		$('#ticker_low').text( GL.cur_data().low );
+		$('#ticker_high').text( GL.cur_data().high );
+		$('#total_volume').text( GL.cur_data().volumes.slice(-1)[0]);
+
 		GL.mins_back_times.forEach( n => {
 			let text = n + 'm';
 			if (n === 0) {
@@ -134,8 +149,27 @@
 			} else if (n === -1) {
 				text = 'Today';
 			}
-			a = $('<a href="#">' + text + '</a>');
-			a.click( e => {e.preventDefault(); showChartMinsBack(e); return false} );
+			a = $('<a href="#" class="clickable">' + text + '</a>');
+			a.set;
+			a.click( e => {
+				e.preventDefault();
+				if (e.target.classList.contains('unclickable')) return false;
+				e.target.parentElement.querySelectorAll('.unclickable').forEach(
+					el=>el.classList.replace('unclickable', 'clickable')
+				)
+				e.target.classList.replace('clickable', 'unclickable');
+
+				if (n >= 1 && n <= 15) {
+					GL.data_interval = 1;
+				} else if ( n >= 20 && n <= 60) {
+					GL.data_interval = 10;
+				} else {
+					GL.data_interval = 100;
+				}
+
+				showChartMinsBack2(n);				
+				return false;
+			});
 			$('#timesContainer').append(' | ')
 			$('#timesContainer').append(a);
 		});
@@ -144,6 +178,7 @@
 			let val = $("#ticker-select option:selected").attr('value');
 			if (val === '') return;
 			GL.cur_ticker = val;
+			$('#ticker_symbol').text(val);
 		})
 
 		$('#skipInterval').blur( (e) => { GL.data_interval = parseInt(e.target.value) } );
@@ -151,14 +186,14 @@
 		$('#resetInterval').click( (e) => { $('#skipInterval').val(1); $('#skipInterval').blur(); } )
 		$('#ticker_symbol').click( (e) => { stockChart.resetZoom(); } );
 		$('#streamSwitch').click( (e) => {
-			P ? $('#streamSwitch').html('Stream OFF') : $('#streamSwitch').html('Stream ON');
-			P = !P;
+			GL.P ? $('#streamSwitch').html('Stream OFF') : $('#streamSwitch').html('Stream ON');
+			GL.P = !GL.P;
 		 });
 
 		GL.volume_y_axis_ticks.forEach( vol => {
 			a = $('<option value="'+ vol +'">'+ vol +'</option>');
 			$('#volume-controls').append(a);
-			if (vol === 10000) $('#volume-controls').val(vol);
+			// if (vol === 10000) $('#volume-controls').val(vol);
 		});
 		$('#volume-controls').change( e => {
 			let val = $("#volume-controls option:selected").attr('value')
@@ -170,49 +205,16 @@
 			rsiChart.options.scales.y_volume.display = !rsiChart.options.scales.y_volume.display;
 		});
 
-		let P = false;  // pause
-		// function runUpdateInterval() {
-		// 	if (!P) {
-		// 		updateChartsWithNewData();
-		// 	}
-		// }
-
-		// setInterval2(runUpdateInterval, 1000);
-
-		let evtSource = null;
-		let stream = () => {
-			let times = GL.cur_data().times;
-			let volumes = GL.cur_data().volumes;
-			let end = (times.length > 0) ? times.slice(-1) : [0,0,0];
-			let begin = (times.length > 0) ? end.split(':') : [0,0,0];
-			begin[2] = (times.length > 0) ? parseInt(begin[2]) + 1 : begin[2];  // want 1 second more
-			prev_volume = (volumes.length > 0) ? volumes.slice(-1) : 0;
-			let url = '/s/'+ GL.cur_ticker + '?prev_volume=' + prev_volume + '&from_time=' + begin.join(':');
-			evtSource = new EventSource(url);
-			evtSource.addEventListener("update", e => {
-				updateChartsWithNewData(JSON.parse(e.data));
-			});
-			evtSource.addEventListener("end", function(event) {
-				evtSource.close(); 
-			});
-		};
-
-		// if (evtSource === null || evtSource.readyState === 2) {
-		// 	stream();
-		// }
-
-		//window.addEventListener('beforeunload', e=>evtSource.close() );
-
 	</script>
 	<script type="module">
 		import { TickerManager } from "/assets/js/modules/ticker_manager.mjs";
 
-		let TM = new TickerManager();
+		window.TM = new TickerManager();
 		var tmp = {};
 		for (const [ticker, obj] of Object.entries(GL.tickers)) {
 			tmp[ticker] = obj.data;
 		}
-		TM.setTickerData(tmp);
-		TM.startStream();
+		window.TM.setTickerData(tmp);
+		window.TM.startStream();
 	</script>
 </html>

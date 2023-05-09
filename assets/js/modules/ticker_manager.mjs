@@ -2,6 +2,7 @@ import { StreamClient } from "./stream_client.mjs";
 
 class TickerManager {
 	#tickerData = {};
+	#listeners = {};
 	#streamer = null;
 
 	constructor (tickers = []) {
@@ -68,7 +69,7 @@ class TickerManager {
 		const tickers = this.getTickers();
 		if (tickers.length > 0 ) {
 			const td = this.#tickerData[ tickers[0] ];
-			return ('times' in td && td.times.length > 0) ?  td.times.slice(-1)  :  def
+			return ('times' in td && td.times.length > 0) ?  td.times.slice(-1)[0]  :  def
 		}
 		return def;
 	}
@@ -96,12 +97,46 @@ class TickerManager {
 	}
 
 
+	addTickerListener ( ticker, func ) {
+		if ( !(ticker in this.#listeners) ) {
+			this.#listeners[ticker] = [func]
+			return true;
+		} 
+		if ( !this.#listeners[ticker].includes(func) ) {
+	  		this.#listeners[ticker].push(func)
+			return true;
+		}
+		return false;
+	}
+
+
+	removeTickerListener ( ticker, func ) {
+		let ret = false;
+		this.#listeners[ticker].forEach( (f, i, arr) => {
+			if (f === func) {
+				arr.splice(i,1);
+				ret = true;
+			}
+		});
+		return true;
+	}
+
+
 	startStream (url = this.#getUrl()) {
 		this.#streamer = new StreamClient(url, (e)=>{console.log(e)});
 		this.#streamer.addEventListener("update", ev=>{
 			try {
-				this.#addData( JSON.parse(ev.data) );
-				updateCharts( JSON.parse(ev.data) );
+				let new_data = JSON.parse(ev.data);
+				this.#addData( new_data );
+				if ( GL.cur_ticker in new_data && new_data[GL.cur_ticker]['times'].length > 0) {
+					updateCharts();
+				}
+				let list = Object.keys(this.#listeners);
+				for ( const [ticker, data] of Object.entries(new_data) ) {
+					if ( list.includes(ticker) ) {
+						this.#listeners[ticker].forEach( func=>func(data) );
+					}
+				}
 			} catch(er) {
 				console.log(er);
 			}

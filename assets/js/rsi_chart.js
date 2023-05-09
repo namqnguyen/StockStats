@@ -1,9 +1,7 @@
-const RSI_PERIODS = 14;
-const EXPSMTH_TIMES = 2;
 const EXPSMTH_ALPHA = 0.2;
 
 
-function calculateRSI(periods = RSI_PERIODS, data = []) {
+function calculateRSI(periods = GL.RSI_PERIODS, data = []) {
 	if (data.length < periods) return [];
 	let RSIarr = [];
 	let periodSumGain = 0.0;
@@ -72,7 +70,7 @@ function calculateVolumeChange(volArr) {
 function getVolumeColor() {
 	let data = GL.cur_data();
 	let colorArr = [];
-	for (let i = IDX; i < data.lasts.length; i++) {
+	for (let i = GL.IDX; i < data.lasts.length; i++) {
 		if (data.lasts[i] > data.lasts[i-1]) {
 			colorArr.push('green');
 		} else if (data.lasts[i] < data.lasts[i-1]) {
@@ -85,14 +83,13 @@ function getVolumeColor() {
 }
 
 function getExponentialSmoothing(data = [], ntimes = 1) {
-	if (data.length == 0 || ntimes <= 0) return data;
+	if (data.length == 0 || ntimes <= 0) return [];
 	let forcastArr = [0];
 	//console.log(data);
 	for (const [i, n] of data.entries()) {
 		if (i == 0) { continue; }
 		val = (i==1) ? data[i-1] : EXPSMTH_ALPHA*data[i-1] + (1 - EXPSMTH_ALPHA)*forcastArr[i-1];
-		if (isNaN(val)) continue; 
-		forcastArr.push(val);
+		if ( !isNaN(val) ) forcastArr.push(val);
 	}
 	return getExponentialSmoothing(forcastArr, --ntimes);
 }
@@ -180,11 +177,23 @@ const getRSIChartData = (RSIdata, old = null) => {
 			return {};
 		}
 		let data = GL.cur_data();
-		let expSmthData = getExponentialSmoothing(RSIdata, EXPSMTH_TIMES);
-		let volData = calculateVolumeChange(data.volumes.slice(IDX));
+
+		// if (GL.data_interval > 1) {
+		// 	data = {times: [], bids: [], asks: [], lasts: [], volumes: []};
+		// 	for (const [k, v] of Object.entries(tbal)) {
+		// 		for (const [i, n] of v.entries()) {
+		// 			if (i % GL.data_interval == 0) {
+		// 				data[k].push(n);
+		// 			}
+		// 		}
+		// 	}
+		// }
+
+		let expSmthData = getExponentialSmoothing(RSIdata, GL.EXPSMTH_TIMES);
+		let volData = calculateVolumeChange(data.volumes.slice(GL.IDX));
 		let volColor = getVolumeColor();
 		let rsiChartData = {
-			labels: data.times.slice(IDX),
+			labels: data.times.slice(GL.IDX),
 			datasets: [
 				{
 					label: 'RSI: ' + RSIdata[RSIdata.length - 1].toFixed(1),
@@ -197,7 +206,7 @@ const getRSIChartData = (RSIdata, old = null) => {
 				//{label: 'overbought', data: overbought, borderWidth: 1, borderColor: 'green'},
 				//{label: 'oversold', data: oversold, borderWidth: 1, borderColor: 'red'},
 				{
-					label: EXPSMTH_TIMES + 'x.Exp.Smoothing: ' + expSmthData[expSmthData.length -1].toFixed(1), // + '          ',
+					label: GL.EXPSMTH_TIMES + 'x.Exp.Smoothing: ' + expSmthData[expSmthData.length -1].toFixed(1), // + '          ',
 					data: expSmthData,
 					borderWidth: 1,
 					borderColor: '#FFC300',
@@ -239,6 +248,9 @@ let RSIplugins = [
 			ctx.strokeStyle = 'red';
 			ctx.strokeRect(left, y.getPixelForValue(70), width, 1);
 
+			ctx.strokeStyle = 'white';
+			ctx.strokeRect(left, y.getPixelForValue(50), width, 1);
+
 			ctx.restore();
 		},
 	},
@@ -246,5 +258,5 @@ let RSIplugins = [
 RSIplugins.push(...getPluginsByIDs(['customChartLegend']));
 
 
-let RSIarr = calculateRSI(RSI_PERIODS, GL.cur_data().lasts);
+let RSIarr = calculateRSI(GL.RSI_PERIODS, GL.cur_data().lasts);
 rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, RSIplugins));
