@@ -74,11 +74,11 @@ const CHART_PLUGINS = [
 		
 			items.forEach(item => {
 				const li = document.createElement('li');
-				li.style.alignItems = 'center';
-				li.style.cursor = 'pointer';
-				li.style.display = 'flex';
-				li.style.flexDirection = 'row';
-				li.style.marginLeft = '10px';
+				// li.style.alignItems = 'center';
+				// li.style.cursor = 'pointer';
+				// li.style.display = 'flex';
+				// li.style.flexDirection = 'row';
+				// li.style.marginLeft = '10px';
 		
 				li.onclick = () => {
 					const {type} = chart.config;
@@ -97,16 +97,16 @@ const CHART_PLUGINS = [
 				boxSpan.style.background = item.fillStyle;
 				boxSpan.style.borderColor = item.strokeStyle;
 				boxSpan.style.borderWidth = item.lineWidth + 'px';
-				boxSpan.style.display = 'inline-block';
-				boxSpan.style.height = '20px';
-				boxSpan.style.marginRight = '10px';
-				boxSpan.style.width = '20px';
+				// boxSpan.style.display = 'inline-block';
+				// boxSpan.style.height = '20px';
+				// boxSpan.style.marginRight = '10px';
+				// boxSpan.style.width = '20px';
 		
 				// Text
 				const textContainer = document.createElement('p');
 				textContainer.style.color = item.fontColor;
-				textContainer.style.margin = 0;
-				textContainer.style.padding = 0;
+				// textContainer.style.margin = 0;
+				// textContainer.style.padding = 0;
 				textContainer.style.textDecoration = item.hidden ? 'line-through' : '';
 		
 				const text = document.createTextNode(item.text);

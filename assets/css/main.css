@@ -1,0 +1,68 @@
+/* dark theme */
+body {
+	background-color: black;
+	font-family: Arial, Helvetica, sans-serif;
+	color: #FFFFFF;
+	/* background-color: Canvas;
+	color: CanvasText;
+	color-scheme: light dark; */
+}
+
+#nav-header {
+	background-color: white;
+	font-size: 22px;
+	font-weight: bold;
+	padding-bottom: 10px;
+}
+
+.chart-wrapper div div {
+	font-size: 22px;
+}
+
+.ticker-low-container {
+	color: red;
+	padding-left: 10px;
+}
+
+.ticker-high-container {
+	color: green;
+	padding-left: 10px;
+}
+
+.custom-chart-legend {
+	/* display: inline-block;
+	background-color: aqua; */
+	font-size: 20;
+	float: right;
+	padding-right: 50px;
+	/* border: 1px solid green; */
+}
+
+.custom-chart-legend li {
+	align-items: center;
+	cursor: pointer;
+	display: flex;
+	flex-direction: row;
+	margin-left: 10px;
+}
+
+.custom-chart-legend span {
+	display:inline-block;
+	height: 20px;
+	margin-right: 10px;
+	width: 20px;
+	/* boxSpan.style.background = item.fillStyle;
+	boxSpan.style.borderColor = item.strokeStyle;
+	boxSpan.style.borderWidth = item.lineWidth + 'px'; */
+}
+
+.custom-chart-legend p {
+	margin: 0;
+	padding: 0;
+	/* textDecoration = item.hidden ? 'line-through' : '';
+	color = item.fontColor; */
+}
+
+.unclickable {
+	color: black;
+}

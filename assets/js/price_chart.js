@@ -58,7 +58,10 @@ function getChartData(tbal, old = null) {
 			{
 				label: 'Bid: ' + data.bids[data.bids.length-1].toFixed(2),
 				data: data.bids,
+				tension: 0.1,
 				borderWidth: 1,
+				pointRadius: 0,
+				pointHoverRadius: 0,
 				borderColor: 'green',
 				backgroundColor: 'green',
 				hidden: (old === null || typeof old.datasets[0] === 'undefined' ) ? false : old.datasets[0].hidden,
@@ -66,7 +69,10 @@ function getChartData(tbal, old = null) {
 			{
 				label: 'Ask: ' + data.asks[data.asks.length-1].toFixed(2),
 				data: data.asks,
+				tension: 0.1,
 				borderWidth: 1,
+				pointRadius: 0,
+				pointHoverRadius: 0,
 				borderColor: 'red',
 				backgroundColor: 'red',
 				hidden: (old === null || typeof old.datasets[1] === 'undefined' ) ? false : old.datasets[1].hidden,
@@ -74,7 +80,10 @@ function getChartData(tbal, old = null) {
 			{
 				label: 'Last: ' + data.lasts[data.lasts.length-1].toFixed(2) + '          ',
 				data: data.lasts,
+				tension: 0.1,
 				borderWidth: 2,
+				pointRadius: 0,
+				pointHoverRadius: 0,
 				borderColor: '#FFC300',
 				backgroundColor: '#FFC300',
 				hidden: (old === null || typeof old.datasets[2] === 'undefined' ) ? false : old.datasets[2].hidden,
@@ -150,7 +159,7 @@ let chartOptions = {
 			},
 		},
 		customChartLegend: {
-			containerID: 'PriceChartLegend',
+			containerID: 'price-chart-legend',
 		},
 	},
 	elements:{
@@ -212,7 +221,7 @@ const updateChartsWithNewData = async (newData, updateChart = true) => {
 			stockChart.update();
 
 			// RSI data and chart
-			let RSIarr = calculateRSI(RSI_PERIODS, priceData.lasts);
+			let RSIarr = calculateRSI(GL.RSI_PERIODS, priceData.lasts);
 			rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
 			rsiChart.update();
 		}
@@ -221,8 +230,6 @@ const updateChartsWithNewData = async (newData, updateChart = true) => {
 
 
 const updateCharts = () => {
-	if (GL.P) return;
-	GL.P = true;  // turn off potential multiple updates (from SSE)
 	let data = GL.cur_data();
 	// send notifications
 	if (exists('window.TN')) {
@@ -237,10 +244,9 @@ const updateCharts = () => {
 	stockChart.update();
 
 	// RSI data and chart
-	let RSIarr = calculateRSI(RSI_PERIODS, priceData.lasts);
+	let RSIarr = calculateRSI(GL.RSI_PERIODS, priceData.lasts);
 	rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
 	rsiChart.update();
-	GL.P = false;  // turn back on
 }
 
 
@@ -310,7 +316,7 @@ function showChartMinsBack(minsBack) {
 		// stockChart.destroy();
 		//stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
 
-		let RSIarr = calculateRSI(RSI_PERIODS, data.lasts.slice(GL.IDX));
+		let RSIarr = calculateRSI(GL.RSI_PERIODS, data.lasts.slice(GL.IDX));
 		rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
 		rsiChart.update();
 		// rsiChart.destroy();

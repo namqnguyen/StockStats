@@ -13,67 +13,49 @@
 			}
 
 		</script>
-		<style>
-			/* dark theme */
-			/* body {
-				background-color: Canvas;
-				color: CanvasText;
-				color-scheme: light dark;
-			} */
-
-			.customChartLegendCSSClass {
-				/* display: inline-block;
-				background-color: aqua; */
-				font-family: Arial, Helvetica, sans-serif;
-				font-size: 20;
-				float: right;
-				padding-right: 50px;
-				/* border: 1px solid green; */
-			}
-
-			.unclickable {
-				color: black;
-			}
-		</style>
+		<link rel="stylesheet" href="/assets/css/main.css" />
 	</head>
 
-	<body style="background-color:black;">
-		<div class="chart-wrapper">
-			<h2 id="timesheader" style="background-color: white;">
-				<select id="ticker-select">
-					<option value="">Ticker</option>
-					{% for key in data.keys() %}
-					<option value="{{key}}">{{key}}</option>
-					{% endfor %}
-				</select>
+	<body>
+		<div id="nav-header">
+			<select id="ticker-select">
+				<option value="">Ticker</option>
+				{% for key in data.keys() %}
+				<option value="{{key}}">{{key}}</option>
+				{% endfor %}
+			</select>
+			<span>
 				<input type="text" id="date" value="{{date if date}}" size="7" />
 				<input type="text" id="from_time" value="{{from_time if from_time}}" size="3" />
 				<input type="text" id="to_time" value="{{to_time if to_time}}" size="3" />
-				<button type="button" id="range_button" onclick="doFilter()">Select</button>
+				<button type="button" id="datetime-button">Filter</button>
 				| <input type="text" id="skipInterval" value="" size="2" /> <button id="resetInterval">res</button>
-				<span id="timesContainer"></span>
-				| <span style="color:red">Low: <span id="ticker_low">0</span></span>
-				| <span style="color: green">High: <span id="ticker_high">0</span></span>
-				| <button id="streamSwitch">Stream OFF</button>
-			</h2>
-
+			</span>
+			<span id="mins-back-container"></span>
+			<button id="stream-switch">Stream OFF</button>
+		</div>
+		<div class="chart-wrapper">
 			<!-- Price Chart -->
-			<div width="100%" style="columns:2;">
-				<div id="ticker_symbol" style="font-family: Arial, Helvetica, sans-serif; color:#FFFFFF">{{ticker}}</div>
-				<div id="PriceChartLegend" class="customChartLegendCSSClass"></div>
+			<div width="100%" style="columns:2; padding-top: 10px;">
+				<div style="text-align: right;">
+					<span id="ticker-symbol">{{ticker}}</span>
+					<span class="ticker-low-container">Low: <span id="ticker-low">0</span></span>
+					<span class="ticker-high-container">High: <span id="ticker-high">0</span></span>
+				</div>
+				<div id="price-chart-legend" class="custom-chart-legend"></div>
 			</div>
 			<canvas id="price_chart"></canvas>
 
 			<!-- RSI Chart -->
-			<div width="100%" style="columns:2;">
-				<div style="font-family: Arial, Helvetica, sans-serif; color:#FFFFFF">
+			<div width="100%" style="columns:2; padding-top: 10px;">
+				<div>
 					<input id="volume-Y-axis-checkbox" type="checkbox" checked>Vol. Y-axis?</input>
 					<select id="volume-controls">
 						<option value="">Max Y-Axis</option>
 					</select>
-					<span>Total Volume: <span id="total_volume">0</span></span>
+					<span>Total Volume: <span id="total-volume">0</span></span>
 				</div>
-				<div id="RSIchartLegend" class="customChartLegendCSSClass"></div>
+				<div id="rsi-chart-legend" class="custom-chart-legend"></div>
 			</div>
 			<canvas id="RSIchart"></canvas>
 		</div>
@@ -82,6 +64,10 @@
 	</body>
 
 	<script src="/assets/js/common.js"></script>
+	<script type="module">
+		import { TickerManager } from "/assets/js/modules/ticker_manager.mjs";
+		window.TM = new TickerManager();
+	</script>
 	<script>
 		let GL = {
 			tickers: {
@@ -102,15 +88,7 @@
 			P: false,
 		};
 		if ( Object.keys(GL.tickers).length == 0 ) {
-			GL.tickers[GL.cur_ticker] = {'data': {
-				"times": [],
-				"bids": [],
-				"asks": [],
-				"lasts": [],
-				"volumes": [],
-				"low": 0,
-				"high": 0,
-			}}
+			GL.tickers[GL.cur_ticker] = {'data': window.TM.getDataStub()}
 		}
 		GL.cur_data = ()=>{
 			if ( GL.cur_ticker in GL.tickers && 'data' in GL.tickers[GL.cur_ticker] ) {
@@ -138,9 +116,11 @@
 	<script src="/assets/js/rsi_chart.js"></script>
 	<script>
 
-		$('#ticker_low').text( GL.cur_data().low );
-		$('#ticker_high').text( GL.cur_data().high );
-		$('#total_volume').text( GL.cur_data().volumes.slice(-1)[0]);
+		$('#ticker-low').text( GL.cur_data().low );
+		$('#ticker-high').text( GL.cur_data().high );
+		$('#total-volume').text( GL.cur_data().volumes.slice(-1)[0]);
+
+		//$('#datetime-button').
 
 		GL.mins_back_times.forEach( n => {
 			let text = n + 'm';
@@ -159,34 +139,32 @@
 				)
 				e.target.classList.replace('clickable', 'unclickable');
 
-				if (n >= 1 && n <= 15) {
-					GL.data_interval = 1;
-				} else if ( n >= 20 && n <= 60) {
-					GL.data_interval = 10;
+				if (n >= 1 && n <= 30) {
+					GL.P = false;
 				} else {
-					GL.data_interval = 100;
+					GL.P = true;
 				}
-
-				showChartMinsBack2(n);				
+				showChartMinsBack2(n);
 				return false;
 			});
-			$('#timesContainer').append(' | ')
-			$('#timesContainer').append(a);
+			$('#mins-back-container').append(' | ')
+			$('#mins-back-container').append(a);
 		});
 
 		$('#ticker-select').change( e => {
 			let val = $("#ticker-select option:selected").attr('value');
 			if (val === '') return;
 			GL.cur_ticker = val;
-			$('#ticker_symbol').text(val);
+			$('#ticker-symbol').text(val);
+			updateCharts();
 		})
 
 		$('#skipInterval').blur( (e) => { GL.data_interval = parseInt(e.target.value) } );
 		$('#skipInterval').keypress( (e) => { if (e.which == 13) { GL.data_interval = parseInt(e.target.value) } } );
 		$('#resetInterval').click( (e) => { $('#skipInterval').val(1); $('#skipInterval').blur(); } )
-		$('#ticker_symbol').click( (e) => { stockChart.resetZoom(); } );
-		$('#streamSwitch').click( (e) => {
-			GL.P ? $('#streamSwitch').html('Stream OFF') : $('#streamSwitch').html('Stream ON');
+		$('#ticker-symbol').click( (e) => { stockChart.resetZoom(); } );
+		$('#stream-switch').click( (e) => {
+			GL.P ? $('#stream-switch').html('Stream OFF') : $('#stream-switch').html('Stream ON');
 			GL.P = !GL.P;
 		 });
 
@@ -207,9 +185,6 @@
 
 	</script>
 	<script type="module">
-		import { TickerManager } from "/assets/js/modules/ticker_manager.mjs";
-
-		window.TM = new TickerManager();
 		var tmp = {};
 		for (const [ticker, obj] of Object.entries(GL.tickers)) {
 			tmp[ticker] = obj.data;

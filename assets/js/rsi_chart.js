@@ -83,7 +83,7 @@ function getVolumeColor() {
 }
 
 function getExponentialSmoothing(data = [], ntimes = 1) {
-	if (data.length == 0 || ntimes <= 0) return [];
+	if (data.length == 0 || ntimes <= 0) return data;
 	let forcastArr = [0];
 	//console.log(data);
 	for (const [i, n] of data.entries()) {
@@ -142,7 +142,7 @@ let RSIChartOptions = {
 			enabled: false,
 		},
 		customChartLegend: {
-			containerID: 'RSIchartLegend',
+			containerID: 'rsi-chart-legend',
 		},
 		legend: {
 			display: false,
@@ -199,6 +199,8 @@ const getRSIChartData = (RSIdata, old = null) => {
 					label: 'RSI: ' + RSIdata[RSIdata.length - 1].toFixed(1),
 					data: RSIdata,
 					borderWidth: 1,
+					pointRadius: 0,
+					pointHoverRadius: 0,
 					borderColor: '#706247',
 					backgroundColor: '#706247',
 					hidden: (old === null || typeof old.datasets[0] === 'undefined' ) ? false : old.datasets[0].hidden,
@@ -208,7 +210,9 @@ const getRSIChartData = (RSIdata, old = null) => {
 				{
 					label: GL.EXPSMTH_TIMES + 'x.Exp.Smoothing: ' + expSmthData[expSmthData.length -1].toFixed(1), // + '          ',
 					data: expSmthData,
-					borderWidth: 1,
+					borderWidth: 2,
+					pointRadius: 0,
+					pointHoverRadius: 0,
 					borderColor: '#FFC300',
 					backgroundColor: '#FFC300',
 					hidden: (old === null || typeof old.datasets[1] === 'undefined' ) ? false : old.datasets[1].hidden,
