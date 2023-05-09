@@ -179,16 +179,16 @@ const getRSIChartData = (RSIdata, old = null) => {
 		let data = GL.cur_data();
 
 		// if (GL.data_interval > 1) {
-		// 	data = {times: [], bids: [], asks: [], lasts: [], volumes: []};
+		// 	let tmp = {times: [], bids: [], asks: [], lasts: [], volumes: []};
 		// 	for (const [k, v] of Object.entries(tbal)) {
 		// 		for (const [i, n] of v.entries()) {
 		// 			if (i % GL.data_interval == 0) {
-		// 				data[k].push(n);
+		// 				tmp[k].push(n);
 		// 			}
 		// 		}
 		// 	}
+		// 	data = tmp;
 		// }
-
 		let expSmthData = getExponentialSmoothing(RSIdata, GL.EXPSMTH_TIMES);
 		let volData = calculateVolumeChange(data.volumes.slice(GL.IDX));
 		let volColor = getVolumeColor();

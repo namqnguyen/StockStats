@@ -42,6 +42,7 @@ function getChartData(tbal, old = null) {
 		return {};
 	}
 	let data = tbal;
+	// window.TM.getIntervalData(GL.cur_ticker, GL.data_interval);
 	if (GL.data_interval > 1) {
 		data = {times: [], bids: [], asks: [], lasts: [], volumes: []};
 		for (const [k, v] of Object.entries(tbal)) {
@@ -56,7 +57,7 @@ function getChartData(tbal, old = null) {
 		labels: data.times,
 		datasets: [
 			{
-				label: 'Bid: ' + data.bids[data.bids.length-1].toFixed(2),
+				label: 'Bid: ' + data.bids.slice(-1)[0].toFixed(2),
 				data: data.bids,
 				tension: 0.1,
 				borderWidth: 1,
@@ -67,7 +68,7 @@ function getChartData(tbal, old = null) {
 				hidden: (old === null || typeof old.datasets[0] === 'undefined' ) ? false : old.datasets[0].hidden,
 			},
 			{
-				label: 'Ask: ' + data.asks[data.asks.length-1].toFixed(2),
+				label: 'Ask: ' + data.asks.slice(-1)[0].toFixed(2),
 				data: data.asks,
 				tension: 0.1,
 				borderWidth: 1,
@@ -78,7 +79,7 @@ function getChartData(tbal, old = null) {
 				hidden: (old === null || typeof old.datasets[1] === 'undefined' ) ? false : old.datasets[1].hidden,
 			},
 			{
-				label: 'Last: ' + data.lasts[data.lasts.length-1].toFixed(2) + '          ',
+				label: 'Last: ' + data.lasts.slice(-1)[0].toFixed(2) + '          ',
 				data: data.lasts,
 				tension: 0.1,
 				borderWidth: 2,

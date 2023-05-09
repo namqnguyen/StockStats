@@ -64,6 +64,21 @@ class TickerManager {
 	}
 
 
+	// getIntervalData (ticker = '', interval = null) {
+	// 	if (ticker === '' || !(ticker in this.#tickerData) || interval === null) return {};
+
+	// 	let data = {times: [], bids: [], asks: [], lasts: [], volumes: []};
+	// 	for (const [k, v] of Object.entries(this.#tickerData[ticker])) {
+	// 		for (const [i, n] of v.entries()) {
+	// 			if (i % interval == 0) {
+	// 				data[k].push(n);
+	// 			}
+	// 		}
+	// 	}
+	// 	return data;
+	// }
+
+
 	#getEndTime () {
 		const def = null;
 		const tickers = this.getTickers();

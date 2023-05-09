@@ -66,7 +66,8 @@
 	<script src="/assets/js/common.js"></script>
 	<script type="module">
 		import { TickerManager } from "/assets/js/modules/ticker_manager.mjs";
-		window.TM = new TickerManager();
+		let TM = new TickerManager();
+		window.TM = TM;
 	</script>
 	<script>
 		let GL = {
@@ -98,7 +99,7 @@
 		}
 		window.GL = GL;
 	</script>
-	<script type="module">
+	<script type="module" async>
 		import { TickerNotification } from "/assets/js/alarm2.mjs";
 
 		let allowed = ['bids', 'asks', 'lasts'];
@@ -184,7 +185,7 @@
 		});
 
 	</script>
-	<script type="module">
+	<script type="module" async>
 		var tmp = {};
 		for (const [ticker, obj] of Object.entries(GL.tickers)) {
 			tmp[ticker] = obj.data;

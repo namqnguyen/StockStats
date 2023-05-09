@@ -156,7 +156,7 @@ def get_stub_data () -> dict:
 async def get_ticker_data3(tickers: list, begin: datetime, end: datetime, last_data: dict = None) -> list:
 	if begin is None or end is None:
 		return []
-	conditions = {'datetime': {'$gte': begin, '$lte': end}}
+	conditions = {'datetime': {'$gt': begin, '$lte': end}}
 	data = {}
 	pipeline = []
 	for ticker in tickers:
