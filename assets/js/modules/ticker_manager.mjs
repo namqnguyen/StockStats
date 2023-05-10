@@ -159,7 +159,7 @@ class TickerManager {
 				let new_data = JSON.parse(ev.data);
 				this.#addData( new_data );
 				if ( !GL.P && GL.cur_ticker in new_data && new_data[GL.cur_ticker]['times'].length > 0) {
-					updateCharts();
+					(GL.mins_back_rolling) ? showChartMinsBack2(GL.cur_mins_back) : updateCharts();
 				}
 				let list = Object.keys(this.#listeners);
 				for ( const [ticker, data] of Object.entries(new_data) ) {
@@ -184,4 +184,9 @@ class TickerManager {
 
 }
 
-export { TickerManager };
+let TM = new TickerManager();
+if (typeof window === 'object') {
+	window.TM = TM
+}
+
+export {TM}

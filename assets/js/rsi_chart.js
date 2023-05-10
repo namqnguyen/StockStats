@@ -196,7 +196,7 @@ const getRSIChartData = (RSIdata, old = null) => {
 			labels: data.times.slice(GL.IDX),
 			datasets: [
 				{
-					label: 'RSI: ' + RSIdata[RSIdata.length - 1].toFixed(1),
+					label: 'RSI: ' + RSIdata.slice(-1)[0].toFixed(1),
 					data: RSIdata,
 					borderWidth: 1,
 					pointRadius: 0,
@@ -208,7 +208,7 @@ const getRSIChartData = (RSIdata, old = null) => {
 				//{label: 'overbought', data: overbought, borderWidth: 1, borderColor: 'green'},
 				//{label: 'oversold', data: oversold, borderWidth: 1, borderColor: 'red'},
 				{
-					label: GL.EXPSMTH_TIMES + 'x.Exp.Smoothing: ' + expSmthData[expSmthData.length -1].toFixed(1), // + '          ',
+					label: GL.EXPSMTH_TIMES + 'x.Exp.Smoothing: ' + expSmthData.slice(-1)[0].toFixed(1), // + '          ',
 					data: expSmthData,
 					borderWidth: 2,
 					pointRadius: 0,

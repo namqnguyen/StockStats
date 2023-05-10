@@ -211,12 +211,12 @@ async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
 			break
 
 		if len(last_data) > 0:
-			ticker = list(last_data.keys())[0]
+			ticker = list(last_data.keys())[0]  # TODO: get actual last time
 			from_time = last_data[ticker]['time']
 		
 		dt = get_datetime(None, from_time, None, None)
 		# dt['begin'] = dt['begin'] - timedelta(3)  # for testing
-		data = await get_ticker_data3(TICKERS, dt['begin'], dt['end'], last_data)
+		data = await get_ticker_data4(TICKERS, dt['begin'], dt['end'])
 		
 		if len( data ) > 0:
 			yield {
@@ -271,7 +271,7 @@ async def get_ticker_data4(tickers: list, begin: datetime, end: datetime) -> lis
 		ticker = item['symbol']
 		prev_volume = last_data[ticker]['volume'] if ticker in last_data else 0
 		volume = float(item['volume'])
-		if (volume > prev_volume and ticker in last_data):  # only want movement of the stock
+		if (volume > prev_volume and doc['datetime'] > begin):  # only want movement of the stock
 			if ticker not in data:
 				data[ticker] = get_stub_data()
 			td = data[ticker]

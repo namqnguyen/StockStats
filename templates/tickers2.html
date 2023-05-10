@@ -7,6 +7,7 @@
 		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
+
 		<script>
 			function doFilter() {
 				window.location.href = '/q/{{ticker}}?date=' + $("#date").val() + '&from_time=' + $("#from_time").val() + '&to_time=' + $("#to_time").val();
@@ -25,14 +26,15 @@
 				{% endfor %}
 			</select>
 			<span>
-				<input type="text" id="date" value="{{date if date}}" size="7" />
-				<input type="text" id="from_time" value="{{from_time if from_time}}" size="3" />
-				<input type="text" id="to_time" value="{{to_time if to_time}}" size="3" />
+				<input type="text" id="date" value="{{date if date}}" size="8" placeholder="YYYY-MM-DD" />
+				<input type="text" id="from_time" value="{{from_time if from_time}}" size="4" placeholder="00:00:00" />
+				<input type="text" id="to_time" value="{{to_time if to_time}}" size="4" placeholder="00:00:00" />
 				<button type="button" id="datetime-button">Filter</button>
 				| <input type="text" id="skipInterval" value="" size="2" /> <button id="resetInterval">res</button>
 			</span>
 			<span id="mins-back-container"></span>
-			<button id="stream-switch">Stream OFF</button>
+			<span style="color: black">| rolling?<input id="mins-back-rolling" type="checkbox"></input></span>
+			<button id="stream-switch" style="float: right; vertical-align: middle;">Stream OFF</button>
 		</div>
 		<div class="chart-wrapper">
 			<!-- Price Chart -->
@@ -65,7 +67,7 @@
 
 	<script src="/assets/js/common.js"></script>
 	<script>
-		let GL = {
+		var GL = {
 			tickers: {
 				{% for key in data.keys() %}
 				{{key}}: {
@@ -78,6 +80,8 @@
 			IDX: 0,
 			volume_y_axis_ticks: [100000, 90000, 80000, 70000, 60000, 50000, 40000, 30000, 20000, 10000],
 			mins_back_times: [-1, 0, 180, 120, 90, 60, 45, 30, 20, 15, 10, 5, 2, 1],
+			cur_mins_back: 15,
+			mins_back_rolling: false,
 			data_interval: 1,
 			RSI_PERIODS: 14,
 			EXPSMTH_TIMES: 2,
@@ -119,16 +123,17 @@
 		//$('#datetime-button').
 
 		GL.mins_back_times.forEach( n => {
+			let cls = (n === GL.cur_mins_back) ? 'unclickable' : 'clickable';
 			let text = n + 'm';
 			if (n === 0) {
 				text = 'Open';
 			} else if (n === -1) {
 				text = 'Today';
 			}
-			a = $('<a href="#" class="clickable">' + text + '</a>');
-			a.set;
+			a = $(`<a href="#" class="${cls}">` + text + '</a>');
 			a.click( e => {
 				e.preventDefault();
+				GL.cur_mins_back = n;
 				if (e.target.classList.contains('unclickable')) return false;
 				e.target.parentElement.querySelectorAll('.unclickable').forEach(
 					el=>el.classList.replace('unclickable', 'clickable')
@@ -179,16 +184,27 @@
 			rsiChart.options.scales.y_volume.display = !rsiChart.options.scales.y_volume.display;
 		});
 
+		$('#mins-back-rolling').change( (el)=> {
+			GL.mins_back_rolling = el.target.checked;
+		});
+
 	</script>
 	<script type="module">
-		import { TickerManager } from "/assets/js/modules/ticker_manager.mjs";
-		window.TM = new TickerManager();
+		import { TM } from "/assets/js/modules/ticker_manager.mjs";
+
+		// adding listeners
+		TM.addTickerListener(GL.cur_ticker, (data)=>{
+			data['low'] < $('#ticker-low').text() ? $('#ticker-low').text(data['low'] ) : null
+			data['high'] < $('#ticker-high').text() ? $('#ticker-high').text(data['high'] ) : null
+			true ? $('#total-volume').text( GL.cur_data().volumes.slice(-1)[0] ) : null
+		});
 
 		var tmp = {};
 		for (const [ticker, obj] of Object.entries(GL.tickers)) {
 			tmp[ticker] = obj.data;
 		}
-		window.TM.setTickerData(tmp);
-		window.TM.startSSEStream();
+		TM.setTickerData(tmp);
+		TM.startSSEStream();
+
 	</script>
 </html>

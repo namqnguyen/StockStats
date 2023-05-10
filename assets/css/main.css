@@ -12,7 +12,8 @@ body {
 	background-color: white;
 	font-size: 22px;
 	font-weight: bold;
-	padding-bottom: 10px;
+	padding-bottom: 5px;
+	/* vertical-align: middle; */
 }
 
 .chart-wrapper div div {

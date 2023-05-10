@@ -237,9 +237,6 @@ const updateCharts = () => {
 		window.TN.check();
 	}
 
-	$('#low').text().replace(data.low)
-	$('#high').text().replace(data.high)
-
 	let priceData = getDataFromIndex(GL.IDX);
 	stockChart.data = getChartData(priceData, stockChart.data);
 	stockChart.update();
