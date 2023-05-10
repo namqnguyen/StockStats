@@ -91,3 +91,16 @@ const fetchJSON = async (url, body = null, method = 'GET') => {
 		return {error: e};
 	}
 }
+
+
+const getDataStub = () => {
+	return {
+		"times": [],
+		"bids": [],
+		"asks": [],
+		"lasts": [],
+		"volumes": [],
+		"low": 0,
+		"high": 0,
+	}
+}

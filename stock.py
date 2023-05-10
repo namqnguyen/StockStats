@@ -238,3 +238,61 @@ async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
 		# 	}
 
 		await asyncio.sleep( sleep )
+
+
+
+async def get_ticker_data4(tickers: list, begin: datetime, end: datetime) -> list:
+	if begin is None or end is None:
+		return []
+	conditions = {'datetime': {'$gte': begin, '$lte': end}}  # need $gte to get previous data
+	pipeline = []
+	for ticker in tickers:
+		pipeline.append( {'$unionWith': {'coll': ticker}} )
+
+	limit = 5000000
+	pipeline.extend([
+		{'$match': conditions},
+		{'$project': {
+			'datetime': 1,
+			'content': {
+				'symbol': 1, 'time': 1, 'bid': 1, 'ask': 1, 'last': 1, 'low': 1, 'high': 1, 'volume': 1
+			}}},
+		{'$sort': {'datetime': 1}},
+		# {'$limit': limit}
+	])
+
+	docs = await mongo_client['stockstats2']['empty__'].aggregate(pipeline).to_list(length=limit)
+	data = {}
+	last_data = {}
+	for doc in docs:
+		item = doc['content']
+		if item['bid'] == '':
+			continue
+		ticker = item['symbol']
+		prev_volume = last_data[ticker]['volume'] if ticker in last_data else 0
+		volume = float(item['volume'])
+		if (volume > prev_volume and ticker in last_data):  # only want movement of the stock
+			if ticker not in data:
+				data[ticker] = get_stub_data()
+			td = data[ticker]
+			et = item['time'].split(' ')[2]
+			time = doc['datetime'] + timedelta(hours=int(int(TIMES[et])/100))
+			td['times'].append(time.strftime('%H:%M:%S'))
+			td['bids'].append(float(item['bid']))
+			td['asks'].append(float(item['ask']))
+			td['lasts'].append(float(item['last']))
+			td['volumes'].append(volume)
+			try:
+				td['low'] = float(item['low'])
+				td['high'] = float(item['high'])
+			except:
+				pass
+
+		last_data[ticker] = {'volume': volume}
+
+	return data
+
+async def json_ticker(request = None, from_time: str = ''):
+	dt = get_datetime(None, from_time, None, None)
+	data = await get_ticker_data4(TICKERS, dt['begin'], dt['end'])
+	return data

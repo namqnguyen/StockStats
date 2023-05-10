@@ -64,11 +64,6 @@
 	</body>
 
 	<script src="/assets/js/common.js"></script>
-	<script type="module">
-		import { TickerManager } from "/assets/js/modules/ticker_manager.mjs";
-		let TM = new TickerManager();
-		window.TM = TM;
-	</script>
 	<script>
 		let GL = {
 			tickers: {
@@ -89,7 +84,7 @@
 			P: false,
 		};
 		if ( Object.keys(GL.tickers).length == 0 ) {
-			GL.tickers[GL.cur_ticker] = {'data': window.TM.getDataStub()}
+			GL.tickers[GL.cur_ticker] = {'data': getDataStub()}
 		}
 		GL.cur_data = ()=>{
 			if ( GL.cur_ticker in GL.tickers && 'data' in GL.tickers[GL.cur_ticker] ) {
@@ -185,12 +180,15 @@
 		});
 
 	</script>
-	<script type="module" async>
+	<script type="module">
+		import { TickerManager } from "/assets/js/modules/ticker_manager.mjs";
+		window.TM = new TickerManager();
+
 		var tmp = {};
 		for (const [ticker, obj] of Object.entries(GL.tickers)) {
 			tmp[ticker] = obj.data;
 		}
 		window.TM.setTickerData(tmp);
-		window.TM.startStream();
+		window.TM.startSSEStream();
 	</script>
 </html>

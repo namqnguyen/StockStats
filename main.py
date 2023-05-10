@@ -14,7 +14,7 @@ from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 from sse_starlette.sse import EventSourceResponse
 from db import DATABASE, mongo_db, mongo_client
-from stock import get_ticker_data2, get_ticker_data3, get_datetime, TIMES, TICKERS, stream_ticker, stream_tickers
+from stock import get_ticker_data2, get_ticker_data3, get_datetime, TIMES, TICKERS, stream_ticker, stream_tickers, json_ticker
 
 load_dotenv()
 
@@ -130,14 +130,18 @@ async def post_q_ticker(request: Request, ticker: str, data = Body()) -> ObjectI
 	return {"id": str(res.inserted_id), 'dt': data['datetime'].strftime('%H:%M:%S')}
 
 
-@app.get("/s/tickers")
-async def get_stream_ticker(request: Request, from_time: str = '',):
+@app.get("/sse/tickers")
+async def get_sse_ticker(request: Request, from_time: str = '',):
 	return EventSourceResponse( stream_tickers(request, from_time) )
 
 
 @app.get("/s/{ticker}")
 async def get_stream_ticker(request: Request, ticker: str, from_time: str = '', prev_volume: float = 0, sleep: int = 1):
 	return EventSourceResponse( stream_ticker(request, ticker, from_time, prev_volume, sleep) )
+
+@app.get("/json/tickers", response_class=JSONResponse)
+async def get_json_ticker(request: Request, from_time: str = '',):
+	return ORJSONResponse( await json_ticker(request, from_time), status_code=200)
 
 
 if __name__ == "__main__":

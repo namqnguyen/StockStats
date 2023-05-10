@@ -1,4 +1,5 @@
 import { StreamClient } from "./stream_client.mjs";
+import { IframeInterval } from "./iframe_interval.mjs";
 
 class TickerManager {
 	#tickerData = {};
@@ -105,10 +106,10 @@ class TickerManager {
 	}
 
 
-	#getUrl () {
+	#getStreamUrl () {
 		const end = this.#getEndTime();
 		const from_time = (end === null) ? '' : `from_time=${end}`;
-		return `/s/tickers?${from_time}`;
+		return `/sse/tickers?${from_time}`;
 	}
 
 
@@ -137,7 +138,21 @@ class TickerManager {
 	}
 
 
-	startStream (url = this.#getUrl()) {
+	#getIframeIntervalUrl () {
+		const end = this.#getEndTime();
+		const from_time = (end === null) ? '' : `from_time=${end}`;
+		return `/q/tickers?${from_time}`;
+	}
+
+
+	startIframeIntervalStream (url = this.#getIframeIntervalUrl()) {
+		let handler = ()=>{
+
+		};
+		IframeInterval.setInterval( handler, 1000 );
+	}
+
+	startSSEStream (url = this.#getStreamUrl()) {
 		this.#streamer = new StreamClient(url, (e)=>{console.log(e)});
 		this.#streamer.addEventListener("update", ev=>{
 			try {
@@ -158,7 +173,7 @@ class TickerManager {
 		});
 		this.#streamer.onerror = (er) => {
 			this.#streamer.close();
-			setTimeout(()=>{this.startStream()}, 5000);
+			setTimeout(()=>{this.startSSEStream()}, 5000);
 		};
 	}
 
