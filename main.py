@@ -14,7 +14,7 @@ from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 from sse_starlette.sse import EventSourceResponse
 from db import DATABASE, mongo_db, mongo_client
-from stock import get_ticker_data2, get_ticker_data3, get_datetime, TIMES, TICKERS, stream_ticker, stream_tickers, json_ticker
+from stock import get_ticker_data2, get_ticker_data3, get_ticker_data4, get_datetime, TIMES, TICKERS, stream_ticker, stream_tickers, json_ticker
 
 load_dotenv()
 
@@ -61,7 +61,7 @@ async def get_quote_tickers(
 
 	dt = get_datetime(date, from_time, to_time)
 	# dt['begin'] = dt['begin'] - timedelta(3)  # for testing
-	data = await get_ticker_data3(TICKERS, dt['begin'], dt['end'])
+	data, last_time = await get_ticker_data4(TICKERS, dt['begin'], dt['end'])
 	# print(len(data['BAC']))
 	
 	if request.headers.get('Content-Type') == 'application/json':

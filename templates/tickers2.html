@@ -29,8 +29,8 @@
 				<input type="text" id="date" value="{{date if date}}" size="8" placeholder="YYYY-MM-DD" />
 				<input type="text" id="from_time" value="{{from_time if from_time}}" size="4" placeholder="00:00:00" />
 				<input type="text" id="to_time" value="{{to_time if to_time}}" size="4" placeholder="00:00:00" />
-				<button type="button" id="datetime-button">Filter</button>
-				| <input type="text" id="skipInterval" value="" size="2" /> <button id="resetInterval">res</button>
+				<button type="button" id="datetime-button">Go</button>
+				| <input type="text" id="skipInterval" value="" size="2" /> <button id="resetInterval">Reset</button>
 			</span>
 			<span id="mins-back-container"></span>
 			<span style="color: black">| rolling?<input id="mins-back-rolling" type="checkbox"></input></span>
@@ -145,7 +145,8 @@
 				} else {
 					GL.P = true;
 				}
-				showChartMinsBack2(n);
+				setMinsBackIndex();
+				updateCharts2();
 				return false;
 			});
 			$('#mins-back-container').append(' | ')
@@ -157,7 +158,8 @@
 			if (val === '') return;
 			GL.cur_ticker = val;
 			$('#ticker-symbol').text(val);
-			updateCharts();
+			setMinsBackIndex();
+			updateCharts2();
 		})
 
 		$('#skipInterval').blur( (e) => { GL.data_interval = parseInt(e.target.value) } );
@@ -195,7 +197,7 @@
 		// adding listeners
 		TM.addTickerListener(GL.cur_ticker, (data)=>{
 			data['low'] < $('#ticker-low').text() ? $('#ticker-low').text(data['low'] ) : null
-			data['high'] < $('#ticker-high').text() ? $('#ticker-high').text(data['high'] ) : null
+			data['high'] > $('#ticker-high').text() ? $('#ticker-high').text(data['high'] ) : null
 			true ? $('#total-volume').text( GL.cur_data().volumes.slice(-1)[0] ) : null
 		});
 

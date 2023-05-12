@@ -205,18 +205,16 @@ async def get_ticker_data3(tickers: list, begin: datetime, end: datetime, last_d
 	return data
 
 async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
-	last_data = {}
+	last_time = None
 	while True:
 		if request != None and await request.is_disconnected():
 			break
 
-		if len(last_data) > 0:
-			ticker = list(last_data.keys())[0]  # TODO: get actual last time
-			from_time = last_data[ticker]['time']
-		
+		if last_time is not None:
+			from_time = last_time.strftime('%H:%M:%S')
 		dt = get_datetime(None, from_time, None, None)
 		# dt['begin'] = dt['begin'] - timedelta(3)  # for testing
-		data = await get_ticker_data4(TICKERS, dt['begin'], dt['end'])
+		data, last_time = await get_ticker_data4(TICKERS, dt['begin'], dt['end'])
 		
 		if len( data ) > 0:
 			yield {
@@ -224,9 +222,7 @@ async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
 				"retry": 5000,  # ms
 				"data": dumps(data),
 			}
-			for ticker in data:
-				td = data[ticker]
-				last_data[ticker] = {'time': td['times'][-1], 'volume': td['volumes'][-1]}
+			
 		# else:
 		# 	data = {
 		# 		'BAC': {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0},
@@ -244,6 +240,7 @@ async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
 async def get_ticker_data4(tickers: list, begin: datetime, end: datetime) -> list:
 	if begin is None or end is None:
 		return []
+	# begin = begin - timedelta(1)
 	conditions = {'datetime': {'$gte': begin, '$lte': end}}  # need $gte to get previous data
 	pipeline = []
 	for ticker in tickers:
@@ -263,20 +260,22 @@ async def get_ticker_data4(tickers: list, begin: datetime, end: datetime) -> lis
 
 	docs = await mongo_client['stockstats2']['empty__'].aggregate(pipeline).to_list(length=limit)
 	data = {}
+	if len(docs) == 0:
+		return data, begin 
 	last_data = {}
 	for doc in docs:
 		item = doc['content']
 		if item['bid'] == '':
 			continue
 		ticker = item['symbol']
+		et = item['time'].split(' ')[2] # "ET"/"EST"
+		time = doc['datetime'] + timedelta(hours=int(int(TIMES[et])/100))
 		prev_volume = last_data[ticker]['volume'] if ticker in last_data else 0
 		volume = float(item['volume'])
 		if (volume > prev_volume and doc['datetime'] > begin):  # only want movement of the stock
 			if ticker not in data:
 				data[ticker] = get_stub_data()
 			td = data[ticker]
-			et = item['time'].split(' ')[2]
-			time = doc['datetime'] + timedelta(hours=int(int(TIMES[et])/100))
 			td['times'].append(time.strftime('%H:%M:%S'))
 			td['bids'].append(float(item['bid']))
 			td['asks'].append(float(item['ask']))
@@ -288,9 +287,10 @@ async def get_ticker_data4(tickers: list, begin: datetime, end: datetime) -> lis
 			except:
 				pass
 
-		last_data[ticker] = {'volume': volume}
+		last_data[ticker] = {'volume': volume, 'time': time}
 
-	return data
+	lt = list(last_data.keys())[-1] # any ticker
+	return data, last_data[lt]['time']
 
 async def json_ticker(request = None, from_time: str = ''):
 	dt = get_datetime(None, from_time, None, None)

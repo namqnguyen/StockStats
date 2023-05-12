@@ -196,47 +196,62 @@ function getChartConfig(type, data, options, plugins) {
 }
 
 
-const updateChartsWithNewData = async (newData, updateChart = true) => {
-	let newd = newData[GL.cur_ticker];
-	if (newd.times.length > 0) {
-		let data = GL.cur_data();
-		// send notifications
-		if (exists('window.TN')) {
-			window.TN.check();
-		}
-		// ticker price data
-		for (const [k, v] of Object.entries(data)) {
-			if ( Array.isArray(newd[k]) ) {
-				v.push(...newd[k]);
-			} else {
-				data[k] = newd[k];
-			}
-		}
+// const updateChartsWithNewData = async (newData, updateChart = true) => {
+// 	let newd = newData[GL.cur_ticker];
+// 	if (newd.times.length > 0) {
+// 		let data = GL.cur_data();
+// 		// send notifications
+// 		if (exists('window.TN')) {
+// 			window.TN.check();
+// 		}
+// 		// ticker price data
+// 		for (const [k, v] of Object.entries(data)) {
+// 			if ( Array.isArray(newd[k]) ) {
+// 				v.push(...newd[k]);
+// 			} else {
+// 				data[k] = newd[k];
+// 			}
+// 		}
 
-		if (updateChart === true) {
-			$('#low').text().replace(data.low)
-			$('#high').text().replace(data.high)
+// 		if (updateChart === true) {
+// 			$('#low').text().replace(data.low)
+// 			$('#high').text().replace(data.high)
 
-			let priceData = getDataFromIndex(GL.IDX);
-			stockChart.data = getChartData(priceData, stockChart.data);
-			stockChart.update();
+// 			let priceData = getDataFromIndex(GL.IDX);
+// 			stockChart.data = getChartData(priceData, stockChart.data);
+// 			stockChart.update();
 
-			// RSI data and chart
-			let RSIarr = calculateRSI(GL.RSI_PERIODS, priceData.lasts);
-			rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
-			rsiChart.update();
-		}
-	}
-}
+// 			// RSI data and chart
+// 			let RSIarr = calculateRSI(GL.RSI_PERIODS, priceData.lasts);
+// 			rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
+// 			rsiChart.update();
+// 		}
+// 	}
+// }
 
 
-const updateCharts = () => {
+const updateCharts = (idx = GL.IDX) => {
 	let data = GL.cur_data();
 	// send notifications
 	if (exists('window.TN')) {
 		window.TN.check();
 	}
 
+	let priceData = getDataFromIndex(idx);
+	stockChart.data = getChartData(priceData, stockChart.data);
+	stockChart.update();
+
+	// RSI data and chart
+	let RSIarr = calculateRSI(GL.RSI_PERIODS, priceData.lasts);
+	rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
+	rsiChart.update();
+}
+
+
+const updateCharts2 = () => {
+	if (GL.mins_back_rolling) {
+		setMinsBackIndex();  // GL.IDX
+	}
 	let priceData = getDataFromIndex(GL.IDX);
 	stockChart.data = getChartData(priceData, stockChart.data);
 	stockChart.update();
@@ -248,9 +263,43 @@ const updateCharts = () => {
 }
 
 
-function showChartMinsBack2(minsBack) {
+function setMinsBackIndex(minsBack = GL.cur_mins_back) {
 	let times = GL.cur_data()['times'];
 	if (times.length ==0 ) return;
+	let last = times.slice(-1)[0];
+	let hms = last.split(':');
+	let hrs = parseInt(hms[0])
+	let mins = parseInt(hms[1]);
+	let secs = parseInt(hms[2]);
+	let openSince = 9*60 + 30;   // Open time, 9:30 AM Eastern
+	const oldIDX = GL.IDX;
+
+	if (minsBack == -1) {
+		GL.IDX = 0;
+		return 0;
+	}
+	if ( minsBack === 0 && hrs*60 + mins >= openSince) {
+		minsBack = hrs*60 + mins - openSince;
+	}
+	if (minsBack > 0) {
+		let backAsSeconds = (hrs*60 + mins - minsBack)*60 + secs;
+		for (const [i, value] of times.entries()) {
+			let time = value.split(':');
+			let asSecs = parseInt(time[0])*3600 + parseInt(time[1]*60) + parseInt(time[2]);
+			if (asSecs > backAsSeconds) {
+				GL.IDX = i;
+				break;
+			}
+		}
+	}
+
+	return GL.IDX;
+}
+
+
+function showChartMinsBack2(minsBack = GL.cur_mins_back) {
+	let times = GL.cur_data()['times'];
+	if (times.length == 0) return;
 	let last = times.slice(-1)[0];
 	let hms = last.split(':');
 	let hrs = parseInt(hms[0])
@@ -282,47 +331,48 @@ function showChartMinsBack2(minsBack) {
 }
 
 
-function showChartMinsBack(minsBack) {
-	let data = GL.cur_data();
-	let last = data.times[data.times.length - 1];
-	let hms = last.split(':');
-	let hrs = parseInt(hms[0])
-	let mins = parseInt(hms[1]);
-	let secs = parseInt(hms[2]);
-	let openSince = 9*60 + 30;   // Open time, 9:30 AM Eastern
-	const oldIDX = GL.IDX;
+// function showChartMinsBack(minsBack) {
+// 	let data = GL.cur_data();
+// 	let last = data.times[data.times.length - 1];
+// 	let hms = last.split(':');
+// 	let hrs = parseInt(hms[0])
+// 	let mins = parseInt(hms[1]);
+// 	let secs = parseInt(hms[2]);
+// 	let openSince = 9*60 + 30;   // Open time, 9:30 AM Eastern
+// 	const oldIDX = GL.IDX;
 
-	if ( minsBack === 0 && hrs*60 + mins >= openSince) {
-		minsBack = hrs*60 + mins - openSince;
-	}
+// 	if ( minsBack === 0 && hrs*60 + mins >= openSince) {
+// 		minsBack = hrs*60 + mins - openSince;
+// 	}
 
-	if (minsBack > 0) {
-		let backAsSeconds = (hrs*60 + mins - minsBack)*60 + secs;
-		for (const [i, value] of data.times.entries()) {
-			let time = value.split(':');
-			let asSecs = parseInt(time[0])*3600 + parseInt(time[1]*60) + parseInt(time[2]);
-			if (asSecs > backAsSeconds) {
-				GL.IDX = i;
-				break;
-			}
-		}
-	}
-	if (GL.IDX !== oldIDX) {
-		let priceData = getDataFromIndex(GL.IDX);
-		stockChart.data = getChartData(priceData, stockChart.data);
-		stockChart.update();
-		// stockChart.destroy();
-		//stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
+// 	if (minsBack > 0) {
+// 		let backAsSeconds = (hrs*60 + mins - minsBack)*60 + secs;
+// 		for (const [i, value] of data.times.entries()) {
+// 			let time = value.split(':');
+// 			let asSecs = parseInt(time[0])*3600 + parseInt(time[1]*60) + parseInt(time[2]);
+// 			if (asSecs > backAsSeconds) {
+// 				GL.IDX = i;
+// 				break;
+// 			}
+// 		}
+// 	}
+// 	if (GL.IDX !== oldIDX) {
+// 		let priceData = getDataFromIndex(GL.IDX);
+// 		stockChart.data = getChartData(priceData, stockChart.data);
+// 		stockChart.update();
+// 		// stockChart.destroy();
+// 		//stockChart = new Chart(ctx, getChartConfig('line', getChartData(data), chartOptions, []));
 
-		let RSIarr = calculateRSI(GL.RSI_PERIODS, data.lasts.slice(GL.IDX));
-		rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
-		rsiChart.update();
-		// rsiChart.destroy();
-		// rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [CHART_PLUGINS[1]]));
-	}
-}
+// 		let RSIarr = calculateRSI(GL.RSI_PERIODS, data.lasts.slice(GL.IDX));
+// 		rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
+// 		rsiChart.update();
+// 		// rsiChart.destroy();
+// 		// rsiChart = new Chart($('#RSIchart'), getChartConfig('line', getRSIChartData(RSIarr), RSIChartOptions, [CHART_PLUGINS[1]]));
+// 	}
+// }
 
 
+// TODO: might not need this since we can use the legend generator / customChartLegend
 function updateBidAskLastLegendPrices(bid, ask, last) {
 	stockChart.data.datasets.forEach (
 		(obj, i) => {
@@ -342,5 +392,6 @@ function updateBidAskLastLegendPrices(bid, ask, last) {
 let PriceChartPlugins = [];
 PriceChartPlugins.push(...getPluginsByIDs(['customChartLegend', 'doAfterRender']));
 
+setMinsBackIndex();
 const ctx = document.getElementById('price_chart');
 let stockChart = new Chart(ctx, getChartConfig('line', getChartData( getDataFromIndex(GL.IDX) ), chartOptions, PriceChartPlugins));
