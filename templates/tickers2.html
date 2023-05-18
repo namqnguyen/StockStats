@@ -96,6 +96,12 @@
 			}
 			return {};
 		}
+		GL.updateTickerData = () => {
+			let data = GL.cur_data();
+			$('#ticker-low').text( data.low );
+			$('#ticker-high').text( data.high );
+			$('#total-volume').text( (parseFloat(data['volumes'].slice(-1)[0])/1000000).toFixed(2) + 'M');
+		}
 		window.GL = GL;
 	</script>
 	<script type="module" async>
@@ -115,13 +121,7 @@
 	<script src="/assets/js/price_chart.js"></script>
 	<script src="/assets/js/rsi_chart.js"></script>
 	<script>
-
-		$('#ticker-low').text( GL.cur_data().low );
-		$('#ticker-high').text( GL.cur_data().high );
-		$('#total-volume').text( GL.cur_data().volumes.slice(-1)[0]);
-
-		//$('#datetime-button').
-
+		GL.updateTickerData();
 		GL.mins_back_times.forEach( n => {
 			let cls = (n === GL.cur_mins_back) ? 'unclickable' : 'clickable';
 			let text = n + 'm';
@@ -158,6 +158,7 @@
 			if (val === '') return;
 			GL.cur_ticker = val;
 			$('#ticker-symbol').text(val);
+			GL.updateTickerData();
 			setMinsBackIndex();
 			updateCharts2();
 		})
@@ -195,11 +196,12 @@
 		import { TM } from "/assets/js/modules/ticker_manager.mjs";
 
 		// adding listeners
-		TM.addTickerListener(GL.cur_ticker, (data)=>{
-			data['low'] < $('#ticker-low').text() ? $('#ticker-low').text(data['low'] ) : null
-			data['high'] > $('#ticker-high').text() ? $('#ticker-high').text(data['high'] ) : null
-			true ? $('#total-volume').text( GL.cur_data().volumes.slice(-1)[0] ) : null
-		});
+		TM.addTickerListener(GL.cur_ticker, GL.updateTickerData);
+
+
+
+		// TM.addPriceChangeListener('_all', 'low', v=>$('#ticker-low').text(v));
+		// TM.addPriceChangeListener('_all', 'high', v=>$('#ticker-high').text(v));
 
 		var tmp = {};
 		for (const [ticker, obj] of Object.entries(GL.tickers)) {

@@ -5,9 +5,14 @@ class TickerManager {
 	#tickerData = {};
 	#listeners = {};
 	#streamer = null;
+	#priceChangeListeners = {};
+	TRACKERS = ['bid', 'ask', 'last', 'volume', 'low', 'high'];
 
 	constructor (tickers = []) {
 		this.add(tickers);
+		Array.prototype.last = function() {
+			return (this.length > 0) ? this.slice(-1)[0] : undefined;
+		}
 	}
 
 
@@ -152,21 +157,86 @@ class TickerManager {
 		IframeInterval.setInterval( handler, 1000 );
 	}
 
+
+	addPriceChangeListener (ticker, tracking, callback) {
+		if ( !(this.TRACKERS).includes(tracking) ) return false;
+		let list = this.#priceChangeListeners;
+		if ( !(ticker in list) ) {
+			list[ticker] = {}
+			list[ticker][tracking] = [callback];
+			return true;
+		}
+		if ( !(tracking in list[ticker]) ) {
+			list[ticker][tracking] = [callback];
+			return true;
+		}
+		if ( !list[ticker][tracking].includes(callback) ) {
+	  		list[ticker][tracking].push(callback);
+			return true;
+		}
+		return false;
+	}
+
+	#callPriceChangeListeners (last_data, newd = null) {
+		let td = last_data;
+		if (typeof newd != 'object' || Object.keys(td).length == 0) return
+		let list = this.#priceChangeListeners;
+		for (const t in newd) {  // each ticker in new data
+			if ( !(t in list) || !(t in td) ) return;
+			this.TRACKERS.forEach( p => {
+				let lt = list[t];  // list of listeners for ticker
+				if ( !(p in lt) ) return
+				let ntd = newd[t]; // new data for ticker
+				let arr = ['bid', 'ask', 'last'];
+				if ( arr.includes(p) ) {
+					let pl = p+'s'; // plural
+					if ( ntd[pl].last() == td[t][pl].last() ) return
+					lt[p].forEach( f => f( ntd[pl].last(), t, ntd ) );
+				} else {
+					lt[p].forEach( f => f( ntd[p], t, ntd ) );
+				}
+			})
+		};
+	}
+
+
+	getLastData () {
+		let data = {};
+		let td = this.#tickerData;
+		for (const t in td) {
+			data[t] = {};
+			for (const [k, v] of Object.entries(td[t])) {
+				if ( ['times', 'bids', 'asks', 'lasts', 'volumes'].includes(k) ) {
+					data[t][k] = v.slice(-1);
+				} else {
+					data[t][k] = v;
+				}
+			}
+		}
+		return data;
+	}
+
 	startSSEStream (url = this.#getStreamUrl()) {
 		this.#streamer = new StreamClient(url, (e)=>{console.log(e)});
 		this.#streamer.addEventListener("update", ev=>{
 			try {
 				let new_data = JSON.parse(ev.data);
+				let last_data = this.getLastData();  // save previous last data
 				this.#addData( new_data );
+				new_data = this.getLastData();  // override to get last most data
+				// TODO: move to potential "ChartManager" module
 				if ( !GL.P && GL.cur_ticker in new_data && new_data[GL.cur_ticker]['times'].length > 0) {
 					updateCharts2();
 				}
+				// per ticker listeners
 				let list = Object.keys(this.#listeners);
 				for ( const [ticker, data] of Object.entries(new_data) ) {
 					if ( list.includes(ticker) ) {
 						this.#listeners[ticker].forEach( func=>func(data) );
 					}
 				}
+				// specific price change listeners, per ticker
+				this.#callPriceChangeListeners(last_data, new_data);
 			} catch(er) {
 				console.log(er);
 			}
@@ -185,7 +255,7 @@ class TickerManager {
 }
 
 let TM = new TickerManager();
-if (typeof window === 'object') {
+if (typeof window === 'object' && self === window) {
 	window.TM = TM
 }
 
