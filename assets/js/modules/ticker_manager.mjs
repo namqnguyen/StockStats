@@ -146,13 +146,38 @@ class TickerManager {
 	#getIframeIntervalUrl () {
 		const end = this.#getEndTime();
 		const from_time = (end === null) ? '' : `from_time=${end}`;
-		return `/q/tickers?${from_time}`;
+		return `/json/tickers?${from_time}`;
 	}
 
 
 	startIframeIntervalStream (url = this.#getIframeIntervalUrl()) {
-		let handler = ()=>{
-
+		let handler = async ()=>{
+			const response = await fetch(url, {
+				"headers": {
+					"content-type": "application/json",
+				},
+				"body": null,
+				"method": "GET",
+			});
+		
+			let new_data = await response.json();
+			if (Object.keys(new_data).length == 0) return;
+			let last_data = this.getLastData();  // save previous last data
+			this.#addData( new_data );
+			new_data = this.getLastData();  // override to get last most data
+			// TODO: move to potential "ChartManager" module
+			if ( !GL.P && GL.cur_ticker in new_data && new_data[GL.cur_ticker]['times'].length > 0) {
+				updateCharts2();
+			}
+			// per ticker listeners
+			let list = Object.keys(this.#listeners);
+			for ( const [ticker, data] of Object.entries(new_data) ) {
+				if ( list.includes(ticker) ) {
+					this.#listeners[ticker].forEach( func=>func(data) );
+				}
+			}
+			// specific price change listeners, per ticker
+			this.#callPriceChangeListeners(last_data, new_data);
 		};
 		IframeInterval.setInterval( handler, 1000 );
 	}
@@ -248,7 +273,7 @@ class TickerManager {
 	}
 
 
-	stopStream () {
+	stopSSEStream () {
 		this.#streamer.close()
 	}
 

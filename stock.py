@@ -225,11 +225,11 @@ async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
 			
 		# else:
 		# 	data = {
-		# 		'BAC': {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0},
+		# 		'BAC': {'times': ['17:00:06'], 'bids': [0], 'asks': [0], 'lasts': [27.065], 'volumes': [1], 'low': 0, 'high': 57},
 	    #  		'WFC': {'times': [], 'bids': [], 'asks': [], 'lasts': [], 'volumes': [], 'low': 0, 'high': 0},
 		# 	}
 		# 	yield {
-		# 		"event": "test",
+		# 		"event": "update",
 		# 		"data": dumps(data),
 		# 	}
 
@@ -240,7 +240,7 @@ async def stream_tickers(request = None, from_time: str = '', sleep: int = 1):
 async def get_ticker_data4(tickers: list, begin: datetime, end: datetime) -> list:
 	if begin is None or end is None:
 		return []
-	# begin = begin - timedelta(1)
+	# begin = begin - timedelta(2)
 	conditions = {'datetime': {'$gte': begin, '$lte': end}}  # need $gte to get previous data
 	pipeline = []
 	for ticker in tickers:
@@ -294,5 +294,5 @@ async def get_ticker_data4(tickers: list, begin: datetime, end: datetime) -> lis
 
 async def json_ticker(request = None, from_time: str = ''):
 	dt = get_datetime(None, from_time, None, None)
-	data = await get_ticker_data4(TICKERS, dt['begin'], dt['end'])
+	data, last_time = await get_ticker_data4(TICKERS, dt['begin'], dt['end'])
 	return data

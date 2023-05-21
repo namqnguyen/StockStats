@@ -1,3 +1,4 @@
+// Global object for config and managing state
 var GL = {
 	tickers: {
 		{% for key in data.keys() %}
@@ -18,7 +19,9 @@ var GL = {
 	EXPSMTH_TIMES: 2,
 	P: false,
 };
-// fill current ticker's data with empty
+window.GL = GL;
+
+// fill current ticker's data with empty for various stats and checks
 if ( Object.keys(GL.tickers).length == 0 ) {
 	GL.tickers[GL.cur_ticker] = {'data': getDataStub()}
 }
@@ -32,15 +35,13 @@ GL.cur_data = ()=>{
 // update low, high, volume numbers
 GL.updateTickerStats = () => {
 	let data = GL.cur_data();
+	if (data['times'].length == 0) return;
 	$('#ticker-low').text( data.low );
 	$('#ticker-high').text( data.high );
 	$('#total-volume').text( (parseFloat(data['volumes'].slice(-1)[0])/1000000).toFixed(2) + 'M');
 }
-window.GL = GL;
-
-
-
 GL.updateTickerStats();
+//  setup mins back links
 GL.mins_back_times.forEach( n => {
 	let cls = (n === GL.cur_mins_back) ? 'unclickable' : 'clickable';
 	let text = n + 'm';
@@ -71,7 +72,11 @@ GL.mins_back_times.forEach( n => {
 	$('#mins-back-container').append(' | ')
 	$('#mins-back-container').append(a);
 });
-
+// whether to keep rolling with selected mins back
+$('#mins-back-rolling').change( (el)=> {
+	GL.mins_back_rolling = el.target.checked;
+});
+// on selecting new ticker, change stats and charts
 $('#ticker-select').change( e => {
 	let val = $("#ticker-select option:selected").attr('value');
 	if (val === '') return;
@@ -83,31 +88,30 @@ $('#ticker-select').change( e => {
 	setMinsBackIndex();
 	updateCharts2();
 })
-
+// set getting only Nth data point, e.g. every other 100th point
 $('#skipInterval').blur( (e) => { GL.data_interval = parseInt(e.target.value) } );
 $('#skipInterval').keypress( (e) => { if (e.which == 13) { GL.data_interval = parseInt(e.target.value) } } );
 $('#resetInterval').click( (e) => { $('#skipInterval').val(1); $('#skipInterval').blur(); } )
+// reset chart if zoomed in
 $('#ticker-symbol').click( (e) => { stockChart.resetZoom(); } );
+// to pause streaming (updating) chart
 $('#stream-switch').click( (e) => {
 	GL.P ? $('#stream-switch').html('Stream OFF') : $('#stream-switch').html('Stream ON');
 	GL.P = !GL.P;
  });
-
+// generate options to show max volume
 GL.volume_y_axis_ticks.forEach( vol => {
 	let a = $('<option value="'+ vol +'">'+ vol +'</option>');
 	$('#volume-controls').append(a);
 	// if (vol === 10000) $('#volume-controls').val(vol);
 });
+// on max vol. change, set chart max value
 $('#volume-controls').change( e => {
 	let val = $("#volume-controls option:selected").attr('value')
 	if (val === '') return;
 	rsiChart.options.scales.y_volume.max = parseInt(val);
 });
-
+// show volume ticks?
 $('#volume-Y-axis-checkbox').click( e => {
 	rsiChart.options.scales.y_volume.display = !rsiChart.options.scales.y_volume.display;
-});
-
-$('#mins-back-rolling').change( (el)=> {
-	GL.mins_back_rolling = el.target.checked;
 });

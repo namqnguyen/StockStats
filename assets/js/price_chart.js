@@ -230,22 +230,22 @@ function getChartConfig(type, data, options, plugins) {
 // }
 
 
-const updateCharts = (idx = GL.IDX) => {
-	let data = GL.cur_data();
-	// send notifications
-	if (exists('window.TN')) {
-		window.TN.check();
-	}
+// const updateCharts = (idx = GL.IDX) => {
+// 	let data = GL.cur_data();
+// 	// send notifications
+// 	if (exists('window.TN')) {
+// 		window.TN.check();
+// 	}
 
-	let priceData = getDataFromIndex(idx);
-	stockChart.data = getChartData(priceData, stockChart.data);
-	stockChart.update();
+// 	let priceData = getDataFromIndex(idx);
+// 	stockChart.data = getChartData(priceData, stockChart.data);
+// 	stockChart.update();
 
-	// RSI data and chart
-	let RSIarr = calculateRSI(GL.RSI_PERIODS, priceData.lasts);
-	rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
-	rsiChart.update();
-}
+// 	// RSI data and chart
+// 	let RSIarr = calculateRSI(GL.RSI_PERIODS, priceData.lasts);
+// 	rsiChart.data = getRSIChartData(RSIarr, rsiChart.data);
+// 	rsiChart.update();
+// }
 
 
 const updateCharts2 = () => {
@@ -297,38 +297,38 @@ function setMinsBackIndex(minsBack = GL.cur_mins_back) {
 }
 
 
-function showChartMinsBack2(minsBack = GL.cur_mins_back) {
-	let times = GL.cur_data()['times'];
-	if (times.length == 0) return;
-	let last = times.slice(-1)[0];
-	let hms = last.split(':');
-	let hrs = parseInt(hms[0])
-	let mins = parseInt(hms[1]);
-	let secs = parseInt(hms[2]);
-	let openSince = 9*60 + 30;   // Open time, 9:30 AM Eastern
-	const oldIDX = GL.IDX;
+// function showChartMinsBack2(minsBack = GL.cur_mins_back) {
+// 	let times = GL.cur_data()['times'];
+// 	if (times.length == 0) return;
+// 	let last = times.slice(-1)[0];
+// 	let hms = last.split(':');
+// 	let hrs = parseInt(hms[0])
+// 	let mins = parseInt(hms[1]);
+// 	let secs = parseInt(hms[2]);
+// 	let openSince = 9*60 + 30;   // Open time, 9:30 AM Eastern
+// 	const oldIDX = GL.IDX;
 
-	if ( minsBack === 0 && hrs*60 + mins >= openSince) {
-		minsBack = hrs*60 + mins - openSince;
-	}
-	if (minsBack > 0) {
-		let backAsSeconds = (hrs*60 + mins - minsBack)*60 + secs;
-		for (const [i, value] of times.entries()) {
-			let time = value.split(':');
-			let asSecs = parseInt(time[0])*3600 + parseInt(time[1]*60) + parseInt(time[2]);
-			if (asSecs > backAsSeconds) {
-				GL.IDX = i;
-				break;
-			}
-		}
-	}
-	if (minsBack == -1) {
-		GL.IDX = 0;
-	}
-	if (GL.IDX !== oldIDX) {
-		updateCharts();
-	}
-}
+// 	if ( minsBack === 0 && hrs*60 + mins >= openSince) {
+// 		minsBack = hrs*60 + mins - openSince;
+// 	}
+// 	if (minsBack > 0) {
+// 		let backAsSeconds = (hrs*60 + mins - minsBack)*60 + secs;
+// 		for (const [i, value] of times.entries()) {
+// 			let time = value.split(':');
+// 			let asSecs = parseInt(time[0])*3600 + parseInt(time[1]*60) + parseInt(time[2]);
+// 			if (asSecs > backAsSeconds) {
+// 				GL.IDX = i;
+// 				break;
+// 			}
+// 		}
+// 	}
+// 	if (minsBack == -1) {
+// 		GL.IDX = 0;
+// 	}
+// 	if (GL.IDX !== oldIDX) {
+// 		updateCharts();
+// 	}
+// }
 
 
 // function showChartMinsBack(minsBack) {
@@ -373,21 +373,21 @@ function showChartMinsBack2(minsBack = GL.cur_mins_back) {
 
 
 // TODO: might not need this since we can use the legend generator / customChartLegend
-function updateBidAskLastLegendPrices(bid, ask, last) {
-	stockChart.data.datasets.forEach (
-		(obj, i) => {
-			let label = obj.label.split(':')[0];
-			if ( label == 'Bid') {
-				obj.label = 'Bid: ' + bid;
-			} else if ( label == 'Ask' ) {
-				obj.label = 'Ask: ' + ask;
-			} else if ( label == 'Last' ) {
-				obj.label = 'Last: ' + last;
-			}
-		}
-	);
-	stockChart.update();
-}
+// function updateBidAskLastLegendPrices(bid, ask, last) {
+// 	stockChart.data.datasets.forEach (
+// 		(obj, i) => {
+// 			let label = obj.label.split(':')[0];
+// 			if ( label == 'Bid') {
+// 				obj.label = 'Bid: ' + bid;
+// 			} else if ( label == 'Ask' ) {
+// 				obj.label = 'Ask: ' + ask;
+// 			} else if ( label == 'Last' ) {
+// 				obj.label = 'Last: ' + last;
+// 			}
+// 		}
+// 	);
+// 	stockChart.update();
+// }
 
 let PriceChartPlugins = [];
 PriceChartPlugins.push(...getPluginsByIDs(['customChartLegend', 'doAfterRender']));

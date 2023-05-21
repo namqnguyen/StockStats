@@ -42,12 +42,13 @@ class IframeInterval {
 				return 'ms must be >= 1000';
 			}
 			let id = Date.now();
-			window.IframeInterval.add(id, func, ...args);
+			window.IframeInterval.#add(id, func, ...args);
 			let callback = 'parent.IframeInterval.callFunc("'+id+'")';
 			let iframe = this.createIframe(id, secs, callback);
 			document.body.appendChild(iframe);
 			return id;
 		} catch(e) {
+			console.log(e);
 			return e;
 		}
 	};
@@ -63,7 +64,7 @@ class IframeInterval {
 	clearAllIntervals () {
 		Object.keys(this.#intervals).forEach(id => {
 			if (typeof this.#intervals[id] !== 'undefined' && this.#intervals[id] !== null) {
-				this.clearInterval(id);
+				IframeInterval.clearInterval(id);
 			}
 		});
 		this.#intervals = {};
