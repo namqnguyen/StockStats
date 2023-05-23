@@ -150,8 +150,9 @@ class TickerManager {
 	}
 
 
-	startIframeIntervalStream (url = this.#getIframeIntervalUrl()) {
+	startIframeIntervalStream () {
 		let handler = async ()=>{
+			let url = this.#getIframeIntervalUrl();
 			const response = await fetch(url, {
 				"headers": {
 					"content-type": "application/json",
