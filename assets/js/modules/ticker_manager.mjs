@@ -5,6 +5,7 @@ class TickerManager {
 	#tickerData = {};
 	#listeners = {};
 	#streamer = null;
+	#iframeid = null;
 	#priceChangeListeners = {};
 	TRACKERS = ['bid', 'ask', 'last', 'volume', 'low', 'high'];
 
@@ -40,8 +41,8 @@ class TickerManager {
 	}
 
 
-	remove (ticker) {
-		return delete this.#tickerData[ticker];
+	remove (tickers = []) {
+		(Array.isArray(tickers))? tickers.forEach( t=>delete this.#tickerData[t] ) : null;
 	}
 
 
@@ -96,7 +97,7 @@ class TickerManager {
 	}
 
 
-	#addData (data = {}) {
+	#addDatax (data = {}) {
 		for (const [ticker, tbalv] of Object.entries(data)) { // tbalv: times, bids, asks, lasts, volumes
 			if ( !(ticker in this.#tickerData) ) continue;
 			let td = this.#tickerData[ticker];
@@ -110,6 +111,35 @@ class TickerManager {
 		}
 	}
 
+
+	#addData (data = {}) {
+		// for each ticker in new data
+		for (const [ticker, tbalv] of Object.entries(data)) { // tbalv = {times:[], bids:[], asks:[], lasts:[], volumes:[], low:float, high:float}
+			if ( !(ticker in this.#tickerData) ) continue;  // might not want this
+			let td = this.#tickerData[ticker];
+			if ( !('times' in td) ) {  // no data
+				td = tbalv;
+				continue;
+			}
+			let lt =  td['times'].slice(-1)[0];
+			let cur_date = new Date().toJSON().slice(0,10);
+			let time = new Date(cur_date+' '+lt).getTime();
+			for (let i = 0; i < tbalv['times'].length; i++) {
+				let time2 = new Date(cur_date+' '+tbalv['times'][i]).getTime();
+				if (time2 > time) {  // get only times that are new
+					['times', 'bids', 'asks', 'lasts', 'volumes'].forEach( (e)=>{
+						td[e].push( ...tbalv[e].slice(i) );
+					});
+					td['low'] = tbalv['low'];
+					td['high'] = tbalv['high'];
+					break;
+				}
+				// else {
+				// 	console.log( ticker, time2, time );
+				// }
+			}
+		}
+	}	
 
 	#getStreamUrl () {
 		const end = this.#getEndTime();
@@ -149,6 +179,25 @@ class TickerManager {
 		return `/json/tickers?${from_time}`;
 	}
 
+	#handleNewData (new_data = {}) {
+		if (Object.keys(new_data).length == 0) return;
+		let last_data = this.getLastData();  // save previous last data
+		this.#addData( new_data );
+		new_data = this.getLastData();  // override to get last most data
+		// TODO: move to potential "ChartManager" module
+		if ( !GL.P && GL.cur_ticker in new_data && new_data[GL.cur_ticker]['times'].length > 0) {
+			updateCharts2();
+		}
+		// per ticker listeners
+		let list = Object.keys(this.#listeners);
+		for ( const [ticker, data] of Object.entries(new_data) ) {
+			if ( list.includes(ticker) ) {
+				this.#listeners[ticker].forEach( func=>func(data) );
+			}
+		}
+		// specific price change listeners, per ticker
+		this.#callPriceChangeListeners(last_data, new_data);
+	}
 
 	startIframeIntervalStream () {
 		let handler = async ()=>{
@@ -162,25 +211,14 @@ class TickerManager {
 			});
 		
 			let new_data = await response.json();
-			if (Object.keys(new_data).length == 0) return;
-			let last_data = this.getLastData();  // save previous last data
-			this.#addData( new_data );
-			new_data = this.getLastData();  // override to get last most data
-			// TODO: move to potential "ChartManager" module
-			if ( !GL.P && GL.cur_ticker in new_data && new_data[GL.cur_ticker]['times'].length > 0) {
-				updateCharts2();
-			}
-			// per ticker listeners
-			let list = Object.keys(this.#listeners);
-			for ( const [ticker, data] of Object.entries(new_data) ) {
-				if ( list.includes(ticker) ) {
-					this.#listeners[ticker].forEach( func=>func(data) );
-				}
-			}
-			// specific price change listeners, per ticker
-			this.#callPriceChangeListeners(last_data, new_data);
+			this.#handleNewData(new_data);
 		};
-		IframeInterval.setInterval( handler, 1000 );
+		this.#iframeid = IframeInterval.setInterval( handler, 1000 );
+	}
+
+
+	stopIframeIntervalStream () {
+		IframeInterval.clearInterval( this.#iframeid );
 	}
 
 
@@ -247,22 +285,7 @@ class TickerManager {
 		this.#streamer.addEventListener("update", ev=>{
 			try {
 				let new_data = JSON.parse(ev.data);
-				let last_data = this.getLastData();  // save previous last data
-				this.#addData( new_data );
-				new_data = this.getLastData();  // override to get last most data
-				// TODO: move to potential "ChartManager" module
-				if ( !GL.P && GL.cur_ticker in new_data && new_data[GL.cur_ticker]['times'].length > 0) {
-					updateCharts2();
-				}
-				// per ticker listeners
-				let list = Object.keys(this.#listeners);
-				for ( const [ticker, data] of Object.entries(new_data) ) {
-					if ( list.includes(ticker) ) {
-						this.#listeners[ticker].forEach( func=>func(data) );
-					}
-				}
-				// specific price change listeners, per ticker
-				this.#callPriceChangeListeners(last_data, new_data);
+				this.#handleNewData(new_data);
 			} catch(er) {
 				console.log(er);
 			}
