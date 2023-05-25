@@ -86,30 +86,30 @@ class TickerManager {
 	// }
 
 
-	#getEndTime () {
-		const def = null;
-		const tickers = this.getTickers();
-		if (tickers.length > 0 ) {
-			const td = this.#tickerData[ tickers[0] ];
-			return ('times' in td && td.times.length > 0) ?  td.times.slice(-1)[0]  :  def
-		}
-		return def;
-	}
+	// #getEndTime () {
+	// 	const def = null;
+	// 	const tickers = this.getTickers();
+	// 	if (tickers.length > 0 ) {
+	// 		const td = this.#tickerData[ tickers[0] ];
+	// 		return ('times' in td && td.times.length > 0) ?  td.times.slice(-1)[0]  :  def
+	// 	}
+	// 	return def;
+	// }
 
 
-	#addDatax (data = {}) {
-		for (const [ticker, tbalv] of Object.entries(data)) { // tbalv: times, bids, asks, lasts, volumes
-			if ( !(ticker in this.#tickerData) ) continue;
-			let td = this.#tickerData[ticker];
-			for (const [k, v] of Object.entries( tbalv )) {
-				if (Array.isArray(v) && v.length > 0) {
-					(k in td) ?  td[k].push(...v)  :  td[k] = v;
-				} else {
-					td[k] = v;
-				}
-			}
-		}
-	}
+	// #addDatax (data = {}) {
+	// 	for (const [ticker, tbalv] of Object.entries(data)) { // tbalv: times, bids, asks, lasts, volumes
+	// 		if ( !(ticker in this.#tickerData) ) continue;
+	// 		let td = this.#tickerData[ticker];
+	// 		for (const [k, v] of Object.entries( tbalv )) {
+	// 			if (Array.isArray(v) && v.length > 0) {
+	// 				(k in td) ?  td[k].push(...v)  :  td[k] = v;
+	// 			} else {
+	// 				td[k] = v;
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 
 	#addData (data = {}) {
@@ -142,7 +142,7 @@ class TickerManager {
 	}	
 
 	#getStreamUrl () {
-		const end = this.#getEndTime();
+		const end = this.getMostRecentTime();
 		const from_time = (end === null) ? '' : `from_time=${end}`;
 		return `/sse/tickers?${from_time}`;
 	}
@@ -173,8 +173,20 @@ class TickerManager {
 	}
 
 
+	getMostRecentTime () {
+		let a = '0';
+		for ( const [_, d] of Object.entries(this.#tickerData) ) {
+			const t = d['times'];
+			if (t.length == 0) continue;
+			const lt = t.slice(-1)[0].replace(/:/g, '');
+			if (lt > a) a = lt;
+		}
+		return (a > '0') ? [a.slice(0,2), a.slice(2,4), a.slice(4,6)].join(':') : null;
+	}
+
+
 	#getIframeIntervalUrl () {
-		const end = this.#getEndTime();
+		const end = this.getMostRecentTime();
 		const from_time = (end === null) ? '' : `from_time=${end}`;
 		return `/json/tickers?${from_time}`;
 	}
@@ -213,6 +225,7 @@ class TickerManager {
 			let new_data = await response.json();
 			this.#handleNewData(new_data);
 		};
+		this.stopSSEStream();
 		this.#iframeid = IframeInterval.setInterval( handler, 1000 );
 	}
 
@@ -281,6 +294,7 @@ class TickerManager {
 	}
 
 	startSSEStream (url = this.#getStreamUrl()) {
+		this.stopIframeIntervalStream();
 		this.#streamer = new StreamClient(url, (e)=>{console.log(e)});
 		this.#streamer.addEventListener("update", ev=>{
 			try {
@@ -298,7 +312,7 @@ class TickerManager {
 
 
 	stopSSEStream () {
-		this.#streamer.close()
+		if (this.#streamer !== null) this.#streamer.close();
 	}
 
 }

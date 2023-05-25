@@ -55,15 +55,15 @@ class IframeInterval {
 
 
 	static clearInterval (id) {
-		if ( typeof document.getElementById(id) !== 'undefined' ) {
-			document.body.removeChild( document.getElementById(id) );
-		}
+		let a = document.getElementById(id);
+		if (a !== null) document.body.removeChild( a );
 	};
 
 
 	clearAllIntervals () {
 		Object.keys(this.#intervals).forEach(id => {
 			if (typeof this.#intervals[id] !== 'undefined' && this.#intervals[id] !== null) {
+				delete this.#intervals[id];
 				IframeInterval.clearInterval(id);
 			}
 		});
