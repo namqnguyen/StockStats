@@ -139,10 +139,17 @@ let RSIChartOptions = {
 	},
 	plugins: {
 		tooltip: {
-			enabled: false,
+			// enabled: false,
+			mode: 'interpolate',
+			intersect: false,
+			filter: function( item ) {
+				return item.datasetIndex === 2;
+			},
 		},
 		customChartLegend: {
 			containerID: 'rsi-chart-legend',
+			showLatestDataPoints: true,
+			toFixed: 0,
 		},
 		legend: {
 			display: false,
@@ -158,6 +165,31 @@ let RSIChartOptions = {
 			// 	//document.getElementById("WAL").style.cursor = 'pointer';
 			// },
 		},
+		crosshair: {
+			line: {
+			  color: '#F66',  // crosshair line color
+			  width: 1        // crosshair line width
+			},
+			sync: {
+			  enabled: true,            // enable trace line syncing with other charts
+			  group: 1,                 // chart group
+			  suppressTooltips: false   // suppress tooltips when showing a synced tracer
+			},
+			zoom: {
+			  enabled: false,                                      // enable zooming
+			  zoomboxBackgroundColor: 'rgba(66,133,244,0.2)',     // background color of zoom box 
+			  zoomboxBorderColor: '#48F',                         // border color of zoom box
+			  zoomButtonText: 'Reset Zoom',                       // reset zoom button text
+			  zoomButtonClass: 'reset-zoom',                      // reset zoom button class
+			},
+			callbacks: {
+			  beforeZoom: () => function(start, end) {                  // called before zoom, return false to prevent zoom
+				return false;
+			  },
+			  afterZoom: () => function(start, end) {                   // called after zoom
+			  }
+			}
+		}
 	},
 	elements:{
 		point:{
@@ -196,7 +228,7 @@ const getRSIChartData = (RSIdata, old = null) => {
 			labels: data.times.slice(GL.IDX),
 			datasets: [
 				{
-					label: 'RSI: ' + RSIdata.slice(-1)[0].toFixed(1),
+					label: 'RSI',
 					data: RSIdata,
 					borderWidth: 1,
 					pointRadius: 0,
@@ -208,7 +240,7 @@ const getRSIChartData = (RSIdata, old = null) => {
 				//{label: 'overbought', data: overbought, borderWidth: 1, borderColor: 'green'},
 				//{label: 'oversold', data: oversold, borderWidth: 1, borderColor: 'red'},
 				{
-					label: GL.EXPSMTH_TIMES + 'x.Exp.Smoothing: ' + expSmthData.slice(-1)[0].toFixed(1), // + '          ',
+					label: GL.EXPSMTH_TIMES + 'x.Exp.Smoothing',
 					data: expSmthData,
 					borderWidth: 2,
 					pointRadius: 0,
@@ -218,7 +250,7 @@ const getRSIChartData = (RSIdata, old = null) => {
 					hidden: (old === null || typeof old.datasets[1] === 'undefined' ) ? false : old.datasets[1].hidden,
 				},
 				{
-					label: 'Volume: ' + volData[volData.length - 1] + '          ',
+					label: 'Volume',
 					type: 'bar',
 					data: volData,
 					borderWidth: 5,

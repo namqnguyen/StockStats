@@ -93,7 +93,7 @@ $('#skipInterval').blur( (e) => { GL.data_interval = parseInt(e.target.value) } 
 $('#skipInterval').keypress( (e) => { if (e.which == 13) { GL.data_interval = parseInt(e.target.value) } } );
 $('#resetInterval').click( (e) => { $('#skipInterval').val(1); $('#skipInterval').blur(); } )
 // reset chart if zoomed in
-$('#ticker-symbol').click( (e) => { stockChart.resetZoom(); } );
+$('#ticker-symbol').click( (e) => { try { stockChart.resetZoom(); stockChart.crosshair.button.click(); } catch{} } );
 // to pause streaming (updating) chart
 $('#stream-switch').click( (e) => {
 	GL.P ? $('#stream-switch').html('Stream OFF') : $('#stream-switch').html('Stream ON');

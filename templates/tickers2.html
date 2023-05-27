@@ -7,6 +7,7 @@
 		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair"></script>
 		<link rel="stylesheet" href="/assets/css/main.css" />
 	</head>
 
@@ -95,8 +96,8 @@
 			tmp[ticker] = obj.data;
 		}
 		TM.setTickerData(tmp);
-		//TM.startSSEStream();
-		TM.startIframeIntervalStream();
+		TM.startSSEStream();
+		// TM.startIframeIntervalStream();
 
 	</script>
 </html>

@@ -29,15 +29,13 @@ const getOrCreateLegendList = (chart, id) => {
 		let listContainer = legendContainer.querySelector('ul');
 	
 		if (!listContainer) {
-		listContainer = document.createElement('ul');
-		listContainer.style.display = 'flex';
-		listContainer.style.flexDirection = 'row';
-		listContainer.style.margin = 0;
-		listContainer.style.padding = 0;
-	
-		legendContainer.appendChild(listContainer);
+			listContainer = document.createElement('ul');
+			listContainer.style.display = 'flex';
+			listContainer.style.flexDirection = 'row';
+			listContainer.style.margin = 0;
+			listContainer.style.padding = 0;
+			legendContainer.appendChild(listContainer);
 		}
-	
 		return listContainer;
 	} catch (e) {
 		console.log(e);
@@ -71,7 +69,7 @@ const CHART_PLUGINS = [
 		
 			// Reuse the built-in legendItems generator
 			const items = chart.options.plugins.legend.labels.generateLabels(chart);
-		
+
 			items.forEach(item => {
 				const li = document.createElement('li');
 				// li.style.alignItems = 'center';
@@ -108,8 +106,14 @@ const CHART_PLUGINS = [
 				// textContainer.style.margin = 0;
 				// textContainer.style.padding = 0;
 				textContainer.style.textDecoration = item.hidden ? 'line-through' : '';
-		
-				const text = document.createTextNode(item.text);
+
+				let tmp = item.text;
+				if (options.showLatestDataPoints && chart.data.datasets[item.datasetIndex].data.length > 0) {
+					let v = chart.data.datasets[item.datasetIndex].data.slice(-1)[0];
+					(typeof options.toFixed == 'number') ? v = v.toFixed(options.toFixed) : null;
+					tmp = tmp + ': ' + v;
+				}
+				const text = document.createTextNode(tmp);
 				textContainer.appendChild(text);
 		
 				li.appendChild(boxSpan);

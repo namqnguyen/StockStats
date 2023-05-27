@@ -67,3 +67,7 @@ body {
 .unclickable {
 	color: black;
 }
+
+.reset-zoom {
+	display: none;
+}

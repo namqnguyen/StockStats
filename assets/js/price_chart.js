@@ -57,7 +57,7 @@ function getChartData(tbal, old = null) {
 		labels: data.times,
 		datasets: [
 			{
-				label: 'Bid: ' + data.bids.slice(-1)[0].toFixed(2),
+				label: 'Bid',
 				data: data.bids,
 				tension: 0.1,
 				borderWidth: 1,
@@ -68,7 +68,7 @@ function getChartData(tbal, old = null) {
 				hidden: (old === null || typeof old.datasets[0] === 'undefined' ) ? false : old.datasets[0].hidden,
 			},
 			{
-				label: 'Ask: ' + data.asks.slice(-1)[0].toFixed(2),
+				label: 'Ask',
 				data: data.asks,
 				tension: 0.1,
 				borderWidth: 1,
@@ -79,7 +79,7 @@ function getChartData(tbal, old = null) {
 				hidden: (old === null || typeof old.datasets[1] === 'undefined' ) ? false : old.datasets[1].hidden,
 			},
 			{
-				label: 'Last: ' + data.lasts.slice(-1)[0].toFixed(2) + '          ',
+				label: 'Last',
 				data: data.lasts,
 				tension: 0.1,
 				borderWidth: 2,
@@ -143,7 +143,12 @@ let chartOptions = {
 			},
 		},
 		tooltip: {
-			enabled: false,
+			// enabled: false,
+			mode: 'interpolate',
+			intersect: false,
+			// filter: function( item ) {
+			// 	return item.datasetIndex === 2;
+			// },
 		},
 		legend: {
 			display: false,
@@ -155,13 +160,40 @@ let chartOptions = {
 				},
 			},
 			onHover: (evt, item, legend) => {
-				console.log('onhover');
-				//document.getElementById("WAL").style.cursor = 'pointer';
+				// console.log('onhover');
+				// document.getElementById("WAL").style.cursor = 'pointer';
 			},
 		},
 		customChartLegend: {
 			containerID: 'price-chart-legend',
+			showLatestDataPoints: true,
+			toFixed: 2,
 		},
+		crosshair: {
+			line: {
+			  color: '#F66',  // crosshair line color
+			  width: 1        // crosshair line width
+			},
+			sync: {
+			  enabled: true,            // enable trace line syncing with other charts
+			  group: 1,                 // chart group
+			  suppressTooltips: false   // suppress tooltips when showing a synced tracer
+			},
+			zoom: {
+			  enabled: true,                                      // enable zooming
+			  zoomboxBackgroundColor: 'rgba(66,133,244,0.2)',     // background color of zoom box 
+			  zoomboxBorderColor: '#48F',                         // border color of zoom box
+			  zoomButtonText: 'Reset Zoom',                       // reset zoom button text
+			  zoomButtonClass: 'reset-zoom',                      // reset zoom button class
+			},
+			callbacks: {
+			  beforeZoom: () => function(start, end) {                  // called before zoom, return false to prevent zoom
+				return true;
+			  },
+			  afterZoom: () => function(start, end) {                   // called after zoom
+			  }
+			}
+		}
 	},
 	elements:{
 		point: {
@@ -395,3 +427,23 @@ PriceChartPlugins.push(...getPluginsByIDs(['customChartLegend', 'doAfterRender']
 setMinsBackIndex();
 const ctx = document.getElementById('price_chart');
 let stockChart = new Chart(ctx, getChartConfig('line', getChartData( getDataFromIndex(GL.IDX) ), chartOptions, PriceChartPlugins));
+
+
+// //Vertical line
+// $(document).ready(function(){
+//     $("#price_chart").on("mousemove", function(evt) {
+//         var element = $("#price_chart"), 
+// 				offsetLeft = element.offset().left,
+// 				domElement = element.get(0),
+// 				clientX = parseInt(evt.clientX - offsetLeft),
+// 				ctx = element.get(0).getContext('2d');
+		 
+//         //ctx.clearRect(0, 0, domElement.width, domElement.height),
+//             ctx.beginPath(),
+//             ctx.moveTo(clientX, 0),
+//             ctx.lineTo(clientX, domElement.height),
+//             ctx.setLineDash([10, 10]),
+//             ctx.strokeStyle = "#333",
+//             ctx.stroke()
+//     });
+// });
