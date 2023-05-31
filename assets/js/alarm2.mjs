@@ -100,7 +100,6 @@ class TickerNotification extends BaseNotification {
 		this.getNames().forEach(e => {
 			let notie = this.#notifications[e];
 			notie.func();
-			console.log(notie);
 			if ( notie.interval === -1 && notie.lastNotified !== null ) {
 				this.delete(e)
 			}
