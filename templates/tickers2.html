@@ -7,7 +7,7 @@
 		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
-		<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair"></script>
+		<!-- <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair"></script> -->
 		<link rel="stylesheet" href="/assets/css/main.css" />
 	</head>
 
@@ -66,16 +66,15 @@
 	<script type="module" async>
 		import { TickerNotification } from "/assets/js/alarm2.mjs";
 
-		let allowed = ['bids', 'asks', 'lasts'];
 		TickerNotification.askPermission((perm)=>{
 			if (perm !== 'granted') {
 				console.log('Permission is: ' + perm);
 				return;
 			}
-			window.TN = new TickerNotification(allowed, GL.cur_data());
+			window.TN = new TickerNotification(GL.tickers);
 		});
 	</script>
-	<script src="/assets/js/alarm.js"></script>
+	<!-- <script src="/assets/js/alarm.js"></script> -->
 	<script src="/assets/js/chart_common.js"></script>
 	<script src="/assets/js/price_chart.js"></script>
 	<script src="/assets/js/rsi_chart.js"></script>
