@@ -298,7 +298,7 @@ const updateCharts2 = () => {
 function setMinsBackIndex(minsBack = GL.cur_mins_back) {
 	let times = GL.cur_data()['times'];
 	if (times.length ==0 ) return;
-	let last = times.slice(-1)[0];
+	let last = times.at(-1);
 	let hms = last.split(':');
 	let hrs = parseInt(hms[0])
 	let mins = parseInt(hms[1]);
@@ -332,7 +332,7 @@ function setMinsBackIndex(minsBack = GL.cur_mins_back) {
 // function showChartMinsBack2(minsBack = GL.cur_mins_back) {
 // 	let times = GL.cur_data()['times'];
 // 	if (times.length == 0) return;
-// 	let last = times.slice(-1)[0];
+// 	let last = times.at(-1);
 // 	let hms = last.split(':');
 // 	let hrs = parseInt(hms[0])
 // 	let mins = parseInt(hms[1]);

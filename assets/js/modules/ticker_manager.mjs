@@ -12,7 +12,7 @@ class TickerManager {
 	constructor (tickers = []) {
 		this.add(tickers);
 		Array.prototype.last = function() {
-			return (this.length > 0) ? this.slice(-1)[0] : undefined;
+			return (this.length > 0) ? this.at(-1) : undefined;
 		}
 	}
 
@@ -91,7 +91,7 @@ class TickerManager {
 	// 	const tickers = this.getTickers();
 	// 	if (tickers.length > 0 ) {
 	// 		const td = this.#tickerData[ tickers[0] ];
-	// 		return ('times' in td && td.times.length > 0) ?  td.times.slice(-1)[0]  :  def
+	// 		return ('times' in td && td.times.length > 0) ?  td.times.at(-1)  :  def
 	// 	}
 	// 	return def;
 	// }
@@ -121,7 +121,7 @@ class TickerManager {
 				td = tbalv;
 				continue;
 			}
-			let lt =  td['times'].slice(-1)[0];
+			let lt =  td['times'].at(-1);
 			let cur_date = new Date().toJSON().slice(0,10);
 			let time = new Date(cur_date+' '+lt).getTime();
 			for (let i = 0; i < tbalv['times'].length; i++) {
@@ -178,7 +178,7 @@ class TickerManager {
 		for ( const [_, d] of Object.entries(this.#tickerData) ) {
 			const t = d['times'];
 			if (t.length == 0) continue;
-			const lt = t.slice(-1)[0].replace(/:/g, '');
+			const lt = t.at(-1).replace(/:/g, '');
 			if (lt > a) a = lt;
 		}
 		return (a > '0') ? [a.slice(0,2), a.slice(2,4), a.slice(4,6)].join(':') : null;

@@ -69,7 +69,7 @@ class TickerNotification extends BaseNotification {
 			func: ()=>{
 				try {
 					let notie = this.#notifications[name];
-					let val = this.tickerData[ticker].data[key].slice(-1)[0];
+					let val = this.tickerData[ticker].data[key].at(-1);
 					let cond = val + ' ' + condition;
 					if ( eval(cond) ) {
 						(callback === null) ? this.cb(key, val, name) : callback(key, val, name);

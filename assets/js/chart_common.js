@@ -109,7 +109,7 @@ const CHART_PLUGINS = [
 
 				let tmp = item.text;
 				if (options.showLatestDataPoints && chart.data.datasets[item.datasetIndex].data.length > 0) {
-					let v = chart.data.datasets[item.datasetIndex].data.slice(-1)[0];
+					let v = chart.data.datasets[item.datasetIndex].data.at(-1);
 					(typeof options.toFixed == 'number') ? v = v.toFixed(options.toFixed) : null;
 					tmp = tmp + ': ' + v;
 				}

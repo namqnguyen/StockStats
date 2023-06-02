@@ -38,7 +38,7 @@ GL.updateTickerStats = () => {
 	if (data['times'].length == 0) return;
 	$('#ticker-low').text( data.low );
 	$('#ticker-high').text( data.high );
-	$('#total-volume').text( (parseFloat(data['volumes'].slice(-1)[0])/1000000).toFixed(2) + 'M');
+	$('#total-volume').text( (parseFloat(data['volumes'].at(-1))/1000000).toFixed(2) + 'M');
 }
 GL.updateTickerStats();
 //  setup mins back links
