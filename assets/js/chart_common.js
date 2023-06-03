@@ -1,3 +1,34 @@
+// Simple Moving Average
+const getSMA = (data = [], period = 10) => {
+	if (!Array.isArray(data) || period < 1 || data.length < period) return;
+	let arr = new Array(period-1).fill(0);
+	for (let i = period; i <= data.length; i++) {
+ 		const x = data.slice(i-period, i).reduce( (x,y) => x+y, 0) / period;
+		arr.push(x);
+	}
+	return arr;
+}
+
+
+// Exponential Moving Average
+const getEMA = (data = [], period = 10) => {
+	const sc = getSC(period);
+	const sma = getSMA(data, period);
+	let ema = [...new Array(period-1).fill(0), sma.at(period-1)];
+	data.slice(period).forEach( x => {
+		const prev = ema.at(-1);
+		ema.push( sc * (x - prev) + prev );
+	});
+	return ema;
+}
+
+
+// Smoothing Constant
+const getSC = (period = 10) => {
+	return 2 / (period + 1);
+}
+
+
 const createIframeRefresher = (id, func, seconds) => {
 	if (document.getElementById(id) !== null) {
 		document.body.removeChild(document.getElementById(id));
