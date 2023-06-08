@@ -1,20 +1,39 @@
+// Volume Weighted Average Price
+const getVWAP = () => {
+	let data = GL.cur_data();
+	let arr = [];
+	let ctp = 0;
+	let idx = GL.IDX;
+	data.times.slice(idx).forEach( (n, i, a) => {
+		const tp = (data.asks[idx+i] + data.bids[idx+i] + data.lasts[idx+i]) / 3;  // (H + L + C)
+		const v = (i > 0) ? data.volumes[idx+i] - data.volumes[idx+i-1] : data.volumes[idx+i];
+		ctp = ctp + (tp * v);
+		arr.push( ctp / data.volumes[idx+i] );
+	})
+	return arr;
+}
+
+
 // Simple Moving Average
 const getSMA = (data = [], period = 10) => {
 	if (!Array.isArray(data) || period < 1 || data.length < period) return;
-	let arr = new Array(period-1).fill(0);
+	// let arr = new Array(period-1).fill(0);
+	// let arr = new Array(period-1).fill( data[period-1] );
+	let arr = [];
 	for (let i = period; i <= data.length; i++) {
  		const x = data.slice(i-period, i).reduce( (x,y) => x+y, 0) / period;
 		arr.push(x);
 	}
-	return arr;
+	return [...new Array(period-1).fill( arr[0] ), ...arr];
 }
 
 
 // Exponential Moving Average
 const getEMA = (data = [], period = 10) => {
 	const sc = getSC(period);
-	const sma = getSMA(data, period);
-	let ema = [...new Array(period-1).fill(0), sma.at(period-1)];
+	const sma = getSMA( data, period );
+	// let ema = [...new Array(period).fill( sma[period-1] )];
+	let ema = [...sma.slice(0, period)];
 	data.slice(period).forEach( x => {
 		const prev = ema.at(-1);
 		ema.push( sc * (x - prev) + prev );

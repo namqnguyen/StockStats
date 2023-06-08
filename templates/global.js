@@ -18,6 +18,7 @@ var GL = {
 	RSI_PERIODS: 14,
 	EXPSMTH_TIMES: 2,
 	P: false,
+	WEIGHTED_AVG_PERIODS: 100,
 };
 window.GL = GL;
 
